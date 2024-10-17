@@ -167,6 +167,20 @@
                   <li class="nav-item" role="presentation">
                     <button
                       class="nav-link"
+                      id="address-tab"
+                      data-bs-toggle="tab"
+                      data-bs-target="#address-tab-pane"
+                      type="button"
+                      role="tab"
+                      aria-controls="address-tab-pane"
+                      aria-selected="false">
+                      Addresses
+                    </button>
+                  </li>
+
+                  <li class="nav-item" role="presentation">
+                    <button
+                      class="nav-link"
                       id="password-tab"
                       data-bs-toggle="tab"
                       data-bs-target="#password-tab-pane"
@@ -230,6 +244,17 @@
                     </div>
                   </div>
 
+                  <!-- Address Tab -->
+                  <div class="tab-pane fade" id="address-tab-pane" role="tabpanel" aria-labelledby="address-tab" tabindex="0">
+                    <div id="addressCardsContainer" class="mb-3">
+                      <!-- Address cards will be appended here -->
+                    </div>
+                    <button type="button" class="btn btn-success" id="addAddressButton" data-bs-toggle="modal" data-bs-target="#editAddressModal">
+                      Add Address
+                    </button>
+                    <button type="button" class="btn btn-primary" id="saveSelectedAddressButton">Save Address</button>
+                  </div>
+
                   <div class="tab-pane fade" id="profile-tab-pane" role="tabpanel" aria-labelledby="profile-tab" tabindex="0">
                     <form action="{% url 'core:update_profile' %}" method="post" class="row gy-3 gy-xxl-4">
                       {% csrf_token %}
@@ -248,22 +273,6 @@
                       <div class="col-12 col-md-4">
                         <label for="inputEmail" class="form-label">Email</label>
                         <input type="email" class="form-control" id="inputEmail" name="email" value="{{ user.email }}" />
-                      </div>
-
-                      <!-- Existing Address Input and Button -->
-                      <div class="col-12 col-md-4">
-                        <label for="inputAddress" class="form-label">Address</label>
-                        <div class="input-group">
-                          <input type="text" class="form-control" id="inputAddress" name="address" value="{{ user.address }}" readonly />
-                          <button
-                            type="button"
-                            class="btn btn-outline-secondary"
-                            id="editAddressButton"
-                            data-bs-toggle="modal"
-                            data-bs-target="#editAddressModal">
-                            Edit Address
-                          </button>
-                        </div>
                       </div>
 
                       <input type="hidden" id="hiddenAddress" name="address" value="{{ user.address }}" />
@@ -315,9 +324,24 @@
 
                   <script>
                     const PSGC_API_BASE_URL = "https://psgc.gitlab.io/api";
+                    let addressCounter = 0;
+                    let addresses = JSON.parse(localStorage.getItem("addresses")) || [];
+                    let selectedAddress = localStorage.getItem("selectedAddress") || addresses[0] || "";
 
-                    document.getElementById("editAddressButton").addEventListener("click", async function () {
-                      await populateRegions();
+                    document.addEventListener("DOMContentLoaded", function () {
+                      displayAddressCards();
+                    });
+
+                    document.getElementById("addAddressButton").addEventListener("click", function () {
+                      // Clear the form fields
+                      document.getElementById("regionSelect").innerHTML = '<option value="">Select Region</option>';
+                      document.getElementById("provinceSelect").innerHTML = '<option value="">Select Province</option>';
+                      document.getElementById("citySelect").innerHTML = '<option value="">Select City/Municipality</option>';
+                      document.getElementById("barangaySelect").innerHTML = '<option value="">Select Barangay</option>';
+                      document.getElementById("exactAddress").value = "";
+
+                      // Populate the regions dropdown
+                      populateRegions();
                     });
 
                     document.getElementById("regionSelect").addEventListener("change", async function () {
@@ -342,15 +366,85 @@
                       const barangay = document.getElementById("barangaySelect").selectedOptions[0].text;
                       const exactAddress = document.getElementById("exactAddress").value;
                       const fullAddress = `${exactAddress}, ${barangay}, ${city}, ${province}, ${region}`;
-                      document.getElementById("inputAddress").value = fullAddress;
-                      document.getElementById("hiddenAddress").value = fullAddress; // Update hidden input field
-                      document.getElementById("inputAddress").setAttribute("readonly", "readonly");
-                      document.getElementById("editAddressButton").textContent = "Edit Address";
+
+                      addresses.push(fullAddress);
+                      localStorage.setItem("addresses", JSON.stringify(addresses));
+                      displayAddressCards();
+
                       const modal = bootstrap.Modal.getInstance(document.getElementById("editAddressModal"));
                       modal.hide();
                     });
 
-                    async function populateRegions() {
+                    document.getElementById("saveSelectedAddressButton").addEventListener("click", function () {
+                      const selectedAddress = document.querySelector('input[name="defaultAddress"]:checked').value;
+                      saveSelectedAddress(selectedAddress);
+                    });
+
+                    function displayAddressCards() {
+                      const container = document.getElementById("addressCardsContainer");
+                      container.innerHTML = "";
+                      addresses.forEach((address, index) => {
+                        const addressCard = document.createElement("div");
+                        addressCard.className = "card mb-3";
+                        addressCard.innerHTML = `
+                          <div class="card-body">
+                            <div class="form-check">
+                              <input class="form-check-input" type="radio" name="defaultAddress" id="address${index}" value="${address}" ${
+                          address === selectedAddress ? "checked" : ""
+                        }>
+                              <label class="form-check-label" for="address${index}">
+                                ${address}
+                              </label>
+                            </div>
+                          </div>
+                        `;
+                        addressCard.querySelector('input[type="radio"]').addEventListener("change", function () {
+                          selectedAddress = address;
+                          localStorage.setItem("selectedAddress", selectedAddress);
+                        });
+                        container.appendChild(addressCard);
+                      });
+                    }
+
+                    async function saveSelectedAddress(address) {
+                      try {
+                        const response = await fetch("/save-selected-address/", {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/x-www-form-urlencoded",
+                            "X-CSRFToken": getCookie("csrftoken"),
+                          },
+                          body: new URLSearchParams({
+                            address: address,
+                          }),
+                        });
+                        const result = await response.json();
+                        if (result.success) {
+                          window.location.reload(); // Refresh the page after saving the address
+                        } else {
+                          console.error("Error saving selected address:", result.error);
+                        }
+                      } catch (error) {
+                        console.error("Error saving selected address:", error);
+                      }
+                    }
+
+                    function getCookie(name) {
+                      let cookieValue = null;
+                      if (document.cookie && document.cookie !== "") {
+                        const cookies = document.cookie.split("; ");
+                        for (let i = 0; i < cookies.length; i++) {
+                          const cookie = cookies[i].trim();
+                          if (cookie.substring(0, name.length + 1) === name + "=") {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                          }
+                        }
+                      }
+                      return cookieValue;
+                    }
+
+                    async function populateRegions(selectedRegion = "") {
                       try {
                         const response = await fetch(`${PSGC_API_BASE_URL}/regions/`);
                         const regions = await response.json();
@@ -360,14 +454,24 @@
                           const option = document.createElement("option");
                           option.value = region.code;
                           option.textContent = region.name;
+                          if (region.name === selectedRegion) {
+                            option.selected = true;
+                          }
                           regionSelect.appendChild(option);
                         });
+                        if (selectedRegion) {
+                          const selectedOption = Array.from(regionSelect.options).find((option) => option.text === selectedRegion);
+                          if (selectedOption) {
+                            regionSelect.value = selectedOption.value;
+                            await populateProvinces(selectedOption.value);
+                          }
+                        }
                       } catch (error) {
                         console.error("Error fetching regions:", error);
                       }
                     }
 
-                    async function populateProvinces(regionCode) {
+                    async function populateProvinces(regionCode, selectedProvince = "") {
                       try {
                         const response = await fetch(`${PSGC_API_BASE_URL}/regions/${regionCode}/provinces/`);
                         const provinces = await response.json();
@@ -377,14 +481,24 @@
                           const option = document.createElement("option");
                           option.value = province.code;
                           option.textContent = province.name;
+                          if (province.name === selectedProvince) {
+                            option.selected = true;
+                          }
                           provinceSelect.appendChild(option);
                         });
+                        if (selectedProvince) {
+                          const selectedOption = Array.from(provinceSelect.options).find((option) => option.text === selectedProvince);
+                          if (selectedOption) {
+                            provinceSelect.value = selectedOption.value;
+                            await populateCitiesOrMunicipalities(selectedOption.value, "province");
+                          }
+                        }
                       } catch (error) {
                         console.error("Error fetching provinces:", error);
                       }
                     }
 
-                    async function populateCitiesOrMunicipalities(code, type) {
+                    async function populateCitiesOrMunicipalities(code, type, selectedCity = "") {
                       try {
                         const endpoint =
                           type === "region"
@@ -398,14 +512,24 @@
                           const option = document.createElement("option");
                           option.value = city.code;
                           option.textContent = city.name;
+                          if (city.name === selectedCity) {
+                            option.selected = true;
+                          }
                           citySelect.appendChild(option);
                         });
+                        if (selectedCity) {
+                          const selectedOption = Array.from(citySelect.options).find((option) => option.text === selectedCity);
+                          if (selectedOption) {
+                            citySelect.value = selectedOption.value;
+                            await populateBarangays(selectedOption.value);
+                          }
+                        }
                       } catch (error) {
                         console.error("Error fetching cities or municipalities:", error);
                       }
                     }
 
-                    async function populateBarangays(cityMunicipalityCode) {
+                    async function populateBarangays(cityMunicipalityCode, selectedBarangay = "") {
                       try {
                         const response = await fetch(`${PSGC_API_BASE_URL}/cities-municipalities/${cityMunicipalityCode}/barangays/`);
                         const barangays = await response.json();
@@ -415,8 +539,17 @@
                           const option = document.createElement("option");
                           option.value = barangay.code;
                           option.textContent = barangay.name;
+                          if (barangay.name === selectedBarangay) {
+                            option.selected = true;
+                          }
                           barangaySelect.appendChild(option);
                         });
+                        if (selectedBarangay) {
+                          const selectedOption = Array.from(barangaySelect.options).find((option) => option.text === selectedBarangay);
+                          if (selectedOption) {
+                            barangaySelect.value = selectedOption.value;
+                          }
+                        }
                       } catch (error) {
                         console.error("Error fetching barangays:", error);
                       }

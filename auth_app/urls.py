@@ -37,5 +37,6 @@ urlpatterns = [
     path('update_product/<int:product_id>/', views.update_product, name='update_product'),
     path('delete_product/<int:product_id>/', views.delete_product, name='delete_product'),
     path('verify-email/<str:token>/', views.VerifyEmail.as_view(), name='verify-email'),
+     path('save-selected-address/', views.save_selected_address, name='save_selected_address'),
    
 ]

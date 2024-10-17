@@ -15,6 +15,7 @@ import jwt
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.contrib.auth import login as auth_login, logout as auth_logout, authenticate
 from django.shortcuts import redirect
 from rest_framework.authtoken.views import ObtainAuthToken
@@ -620,3 +621,12 @@ def delete_product(request, product_id):
     product.delete()
     return JsonResponse({'success': True})
 
+
+def save_selected_address(request):
+    address = request.POST.get('address')
+    if address:
+        user = request.user
+        user.address = address  # Assuming the address field is named 'address'
+        user.save()
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False, 'error': 'No address provided'})
