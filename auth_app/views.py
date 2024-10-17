@@ -96,7 +96,17 @@ def user_profile(request):
     else:
         form = ProfileImageForm(instance=request.user)
 
-    return render(request, 'core/prof_user.html', {'form': form, 'user': request.user, 'transactions': Transaction.objects.filter(user=request.user).order_by('-date')})
+    # Fetch transactions and apply pagination
+    transactions = Transaction.objects.filter(user=request.user).order_by('-date')
+    paginator = Paginator(transactions, 4)  # Show 4 transactions per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'core/prof_user.html', {
+        'form': form,
+        'user': request.user,
+        'transactions': page_obj
+    })
 
 # views.py
 
