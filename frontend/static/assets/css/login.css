@@ -1,0 +1,21 @@
+body {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+body::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('/static/assets/img/login.jpg') no-repeat center center/cover; /* Background image */
+  filter: blur(0px) brightness(1);
+  transform: scale(1.1); /* Scale it up slightly */
+  z-index: -1;
+}
+

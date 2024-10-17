@@ -1,0 +1,131 @@
+{% extends 'partials/base.html' %} {% load static %} {% block content %}
+
+<!-- search area -->
+<div class="search-area">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-12">
+        <span class="close-btn"><i class="fas fa-window-close"></i></span>
+        <div class="search-bar">
+          <div class="search-bar-tablecell">
+            <h3>Search For:</h3>
+            <input type="text" placeholder="Keywords" />
+            <button type="submit">Search <i class="fas fa-search"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- end search area -->
+
+<!-- hero area -->
+<div class="hero-area hero-bg">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-9 offset-lg-2 text-center">
+        <div class="hero-text">
+          <div class="hero-text-tablecell">
+            <p class="subtitle" style="font-size: 15px; margin-left: -140px !important">Witness art like never before</p>
+            <div class="hero-btns" style="margin-left: -140px !important">
+              <a href="{% url 'core:shop' %}" class="boxed-btn" style="background-color: #84a1af">Art Collection</a>
+              <a href="contact.html" class="bordered-btn" style="border-color: #84a1af">Contact Us</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- end hero area -->
+
+<!-- product section -->
+<div class="product-section mt-150 mb-150">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 offset-lg-2 text-center">
+        <div class="section-title">
+          <h3><span style="color: #84a1af">Our</span> Products</h3>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      {% for product in related_products %}
+      <div class="col-lg-4 col-md-6 text-center">
+        <div class="single-product-item">
+          <div class="product-image" style="height: 250px; margin-bottom: 50px">
+            <a href="{% url 'core:single_product' product.id %}">
+              <img src="{{ product.image.url }}" alt="{{ product.name }}" />
+            </a>
+          </div>
+          <h3>{{ product.name }}</h3>
+          <p class="product-price"><span>{{ product.type.split|first }}</span> {{ product.price }}₱</p>
+          <a href="#" class="cart-btn add-to-cart" data-product-id="{{ product.id }}"><i class="fas fa-shopping-cart"></i> Add to Cart</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+<!-- end product section -->
+
+<!-- Notification -->
+<div
+  id="notification"
+  style="display: none; position: fixed; top: 20px; right: 20px; background: #28a745; color: white; padding: 10px; border-radius: 5px; z-index: 1000">
+  Item added to cart!
+</div>
+
+<!-- Include jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const addToCartButtons = document.querySelectorAll(".add-to-cart");
+
+    addToCartButtons.forEach((button) => {
+      button.addEventListener("click", function (event) {
+        event.preventDefault();
+        const productId = this.dataset.productId;
+        const quantityInput = document.getElementById("quantity-input");
+        const quantity = quantityInput ? quantityInput.value : 1;
+
+        fetch(`{% url 'core:add_to_cart' 0 %}`.replace("0", productId), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-CSRFToken": "{{ csrf_token }}",
+          },
+          body: new URLSearchParams({
+            quantity: quantity,
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.error) {
+              alert(data.error);
+            } else {
+              // Update the cart item count dynamically
+              const cartCountElement = document.querySelector(".cart-count");
+              if (cartCountElement) {
+                cartCountElement.textContent = data.total_items;
+              } else {
+                const cartIcon = document.querySelector(".shopping-cart");
+                const newCartCountElement = document.createElement("span");
+                newCartCountElement.className = "cart-count";
+                newCartCountElement.textContent = data.total_items;
+                cartIcon.appendChild(newCartCountElement);
+              }
+
+              // Show notification
+              $("#notification").text("Item added to cart!").fadeIn().delay(2000).fadeOut();
+            }
+          })
+          .catch((error) => console.error("Error:", error));
+      });
+    });
+  });
+</script>
+
+{% endblock content %}

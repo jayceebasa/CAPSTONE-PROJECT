@@ -1,0 +1,193 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css"
+    />
+    <link rel="stylesheet" href="{% static 'assets/css/login.css' %}" />
+  </head>
+  <body>
+    <!-- Alert Message -->
+    {% if messages %}
+    <div class="container mt-3">
+      {% for message in messages %}
+      <div class="alert {% if 'error' in message.tags %}alert-danger{% elif message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+  {% endfor %}
+    </div>
+    {% endif %}
+    <!-- End Alert Message -->
+    <section class="py-3 py-md-5">
+      <div class="container">
+        <div class="row justify-content-center">
+          <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5 col-xxl-4">
+            <div
+              class="card rounded-3"
+              style="background-color: rgba(0, 0, 0, 0.58)"
+            >
+              <div class="card-body p-3 p-md-4 p-xl-5">
+                <div class="text-center mb-3">
+                  <a href="#!">
+                    <img
+                      src="{% static 'assets/img/astig.png' %}"
+                      width="175"
+                      height="57"
+                    />
+                  </a>
+                </div>
+                <h2
+                  class="fs-6 fw-normal text-center mb-4"
+                  style="color: white"
+                >
+                  Sign in to your account
+                </h2>
+
+                <!-- Django Login Form -->
+                <form
+                  id="loginForm"
+                  method="POST"
+                  action="{% url 'core:login' %}"
+                >
+                  {% csrf_token %}
+                  <div class="row gy-2 overflow-hidden">
+                    <div class="col-12">
+                      <div class="form-group mb-3">
+                        <label
+                          for="username"
+                          class="form-label"
+                          style="color: white"
+                          >Username</label
+                        >
+                        <input
+                          type="text"
+                          class="form-control"
+                          name="username"
+                          id="username"
+                          placeholder="Username"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div class="col-12">
+                      <div class="form-group mb-3">
+                        <div class="col-12">
+                          <div class="form-group mb-3">
+                            <label
+                              for="password"
+                              class="form-label"
+                              style="color: white"
+                              >Password</label
+                            >
+                            <div class="input-group">
+                              <input
+                                type="password"
+                                class="form-control"
+                                name="password"
+                                id="password"
+                                placeholder="Password"
+                                required
+                              />
+                              <button
+                                class="btn btn-outline-secondary"
+                                type="button"
+                                id="togglePassword"
+                              >
+                                <i class="bi bi-eye"></i>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                        <div class="col-12">
+                          <div class="form-check mb-3">
+                            <input
+                              class="form-check-input"
+                              type="checkbox"
+                              value=""
+                              id="rememberMe"
+                            />
+                            <label
+                              class="form-check-label"
+                              for="rememberMe"
+                              style="color: white"
+                              >Remember me</label
+                            >
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-12">
+                      <button type="submit" class="btn btn-primary w-100">
+                        Sign In
+                      </button>
+                    </div>
+
+                    <div class="text-center">
+                      <p style="color: rgb(255, 255, 255)">
+                        Don't have an account?
+                        <a
+                          href="#"
+                          data-bs-toggle="modal"
+                          data-bs-target="#registerModal"
+                          style="color: white"
+                          ><strong>REGISTER HERE</strong></a
+                        >
+                      </p>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Register Modal -->
+    <div
+      class="modal fade"
+      id="registerModal"
+      tabindex="-1"
+      aria-labelledby="registerModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="registerModalLabel">Register as</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <p>Please select the type of account you want to create:</p>
+            <div class="d-grid gap-2">
+              <a href="{% url 'core:reg_user' %}" class="btn btn-primary"
+                >User</a
+              >
+              <a href="{% url 'core:reg_seller' %}" class="btn btn-secondary">Seller</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"></script>
+    <script src="{% static 'assets/js/login.js' %}"></script>
+  </body>
+</html>

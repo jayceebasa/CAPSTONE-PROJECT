@@ -1,0 +1,1053 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Responsive Bootstrap4 Shop Template, Created by Imran Hossain from https://imransdesign.com/" />
+
+    <!-- title -->
+    <title>ASTIG</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+    <!-- favicon -->
+    <link rel="shortcut icon" type="image/png" href="{% static 'assets/img/astig.png' %}" />
+    <!-- google font -->
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,700" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css?family=Poppins:400,700&display=swap" rel="stylesheet" />
+    <!-- fontawesome -->
+    <link rel="stylesheet" href="{% static 'assets/css/all.min.css' %}" />
+    <!-- bootstrap -->
+    <link rel="stylesheet" href="{% static 'assets/bootstrap/css/bootstrap.min.css' %}" />
+    <!-- owl carousel -->
+    <link rel="stylesheet" href="{% static 'assets/css/owl.carousel.css' %}" />
+    <!-- magnific popup -->
+    <link rel="stylesheet" href="{% static 'assets/css/magnific-popup.css' %}" />
+    <!-- animate css -->
+    <link rel="stylesheet" href="{% static 'assets/css/animate.css' %}" />
+    <!-- mean menu css -->
+    <link rel="stylesheet" href="{% static 'assets/css/meanmenu.min.css' %}" />
+    <!-- main style -->
+    <link rel="stylesheet" href="{% static 'assets/css/main.css' %}" />
+    <!-- responsive -->
+    <link rel="stylesheet" href="{% static 'assets/css/responsive.css' %}" />
+    <link rel="stylesheet" href="{% static 'assets/css/user.css' %}" />
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  </head>
+  <body>
+    <!-- header -->
+    <div class="top-header-area" style="background-color: #051922; margin-top: -20px">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-12 col-sm-12 text-center">
+            <div class="main-menu-wrap">
+              <!-- logo -->
+              <div class="site-logo">
+                <a href="{% url 'core:home' %}">
+                  <img src="{% static 'assets/img/astig.png' %}" alt="" style="max-width: 60%" />
+                </a>
+              </div>
+              <!-- logo -->
+
+              <!-- menu start -->
+              <nav class="main-menu">
+                <ul>
+                  <li class="">
+                    <a href="{% url 'core:home' %}">Home</a>
+                  </li>
+                  <li><a href="about.html">About</a></li>
+                  <li><a href="{% url 'core:shop' %}">Shop</a></li>
+                  <li>
+                    <div class="header-icons">
+                      <a class="shopping-cart" href="{% url 'core:cart_detail' %}"><i class="fas fa-shopping-cart"></i></a>
+                      <a class="mobile-hide user-icon" href="{% url 'core:sellers' %}"><i class="fas fa-user"></i></a>
+                      <a class="notification-icon" href="#"><i class="fas fa-bell"></i></a>
+                      <a class="logout-button" href="{% url 'core:logout' %}">Logout</a>
+                    </div>
+                  </li>
+                </ul>
+              </nav>
+
+              <div class="mobile-menu"></div>
+              <!-- menu end -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- end header -->
+
+    <!-- Profile 1 - Bootstrap Brain Component -->
+    <section class="py-3 py-md-5 py-xl-8">
+      <div class="container" style="padding-top: 100px">
+        {% if alert %}
+        <div class="row justify-content-center">
+          <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5 col-xxl-4">
+            <div class="alert alert-danger alert-dismissible fade show" role="alert" id="alertBox">
+              {{ alert }}
+
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          </div>
+        </div>
+        {% endif %} {% if success %}
+        <div class="row justify-content-center">
+          <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5 col-xxl-4">
+            <div class="alert alert-success alert-dismissible fade show" role="alert" id="successBox">
+              {{ success }}
+
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        <div class="row justify-content-md-center">
+          <div class="col-12 col-md-10 col-lg-8 col-xl-7 col-xxl-6">
+            <h2 class="mb-4 display-5 text-center">{{user.role }} Profile</h2>
+            <hr class="w-50 mx-auto mb-5 mb-xl-9 border-dark-subtle" />
+          </div>
+        </div>
+      </div>
+
+      <div class="container">
+        <div class="row gy-4 gy-lg-0">
+          <div class="col-12 col-lg-4 col-xl-3">
+            <div class="row gy-4">
+              <div class="col-12">
+                <div class="card widget-card border-light shadow-sm">
+                  <div class="card-header text-bg-primary" style="background-color: #051922 !important">Welcome, {{user.first_name}}</div>
+                  <div class="card-body">
+                    <div class="text-center mb-3">
+                      <div class="rounded-circle overflow-hidden" style="width: 200px; height: 200px; margin: 0 auto">
+                        <img src="{{user.picture.url}}" class="img-fluid" alt="Luna John" style="width: 100%; height: 100%; object-fit: cover" />
+                      </div>
+                      <button class="btn btn-primary mt-3" type="button" id="editImageButton">Edit Image</button>
+                      <input type="file" id="imageInput" style="display: none" />
+                    </div>
+                    <h5 class="text-center mb-1">{{user.first_name}} {{user.last_name }}</h5>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-lg-8 col-xl-9">
+            <div class="" style="background-color: rgba(0, 131, 245, 0) !important">
+              <div class="card-body p-4" style="background-color: rgba(255, 255, 255, 0) !important">
+                <ul class="nav nav-tabs" id="profileTab" role="tablist">
+                  <li class="nav-item" role="presentation">
+                    <button
+                      class="nav-link active"
+                      id="overview-tab"
+                      data-bs-toggle="tab"
+                      data-bs-target="#overview-tab-pane"
+                      type="button"
+                      role="tab"
+                      aria-controls="overview-tab-pane"
+                      aria-selected="true">
+                      Overview
+                    </button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button
+                      class="nav-link"
+                      id="profile-tab"
+                      data-bs-toggle="tab"
+                      data-bs-target="#profile-tab-pane"
+                      type="button"
+                      role="tab"
+                      aria-controls="profile-tab-pane"
+                      aria-selected="false">
+                      Profile
+                    </button>
+                  </li>
+
+                  <li class="nav-item" role="presentation">
+                    <button
+                      class="nav-link"
+                      id="password-tab"
+                      data-bs-toggle="tab"
+                      data-bs-target="#password-tab-pane"
+                      type="button"
+                      role="tab"
+                      aria-controls="password-tab-pane"
+                      aria-selected="false">
+                      Password
+                    </button>
+                  </li>
+
+                  <li class="nav-item" role="presentation">
+                    <button
+                      class="nav-link"
+                      id="transaction-tab"
+                      data-bs-toggle="tab"
+                      data-bs-target="#transaction-tab-pane"
+                      type="button"
+                      role="tab"
+                      aria-controls="transaction-tab-pane"
+                      aria-selected="false">
+                      Products
+                    </button>
+                  </li>
+
+                  <li class="nav-item" role="presentation">
+                    <button
+                      class="nav-link"
+                      id="order-tab"
+                      data-bs-toggle="tab"
+                      data-bs-target="#order-tab-pane"
+                      type="button"
+                      role="tab"
+                      aria-controls="order-tab-pane"
+                      aria-selected="false">
+                      Orders
+                    </button>
+                  </li>
+                </ul>
+                <div class="tab-content pt-1" id="profileTabContent" style="height: 286px !important">
+                  <div class="tab-pane fade show active" id="overview-tab-pane" role="tabpanel" aria-labelledby="overview-tab" tabindex="0">
+                    <h5 class="mb-3">Profile</h5>
+                    <div class="row g-0">
+                      <div class="col-5 col-md-3 bg-light border-bottom border-white border-3">
+                        <div class="p-2">First Name</div>
+                      </div>
+                      <div class="col-7 col-md-9 bg-light border-start border-bottom border-white border-3">
+                        <div class="p-2">{{user.first_name}}</div>
+                      </div>
+                      <div class="col-5 col-md-3 bg-light border-bottom border-white border-3">
+                        <div class="p-2">Last Name</div>
+                      </div>
+                      <div class="col-7 col-md-9 bg-light border-start border-bottom border-white border-3">
+                        <div class="p-2">{{user.last_name}}</div>
+                      </div>
+
+                      <div class="col-5 col-md-3 bg-light border-bottom border-white border-3">
+                        <div class="p-2">Address</div>
+                      </div>
+                      <div class="col-7 col-md-9 bg-light border-start border-bottom border-white border-3">
+                        <div class="p-2">{{user.address}}</div>
+                      </div>
+                      <div class="col-5 col-md-3 bg-light border-bottom border-white border-3">
+                        <div class="p-2">Phone</div>
+                      </div>
+                      <div class="col-7 col-md-9 bg-light border-start border-bottom border-white border-3">
+                        <div class="p-2">{{user.PhoneNumber}}</div>
+                      </div>
+                      <div class="col-5 col-md-3 bg-light border-bottom border-white border-3">
+                        <div class="p-2">Email</div>
+                      </div>
+                      <div class="col-7 col-md-9 bg-light border-start border-bottom border-white border-3">
+                        <div class="p-2">{{user.email}}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="tab-pane fade" id="profile-tab-pane" role="tabpanel" aria-labelledby="profile-tab" tabindex="0">
+                    <form action="{% url 'core:update_profile' %}" method="post" class="row gy-3 gy-xxl-4">
+                      {% csrf_token %}
+
+                      <div class="col-12 col-md-4">
+                        <label for="inputFirstName" class="form-label">First Name</label>
+                        <input type="text" class="form-control" id="inputFirstName" name="first_name" value="{{ user.first_name }}" />
+                      </div>
+                      <div class="col-12 col-md-4">
+                        <label for="inputLastName" class="form-label">Last Name</label>
+                        <input type="text" class="form-control" id="inputLastName" name="last_name" value="{{ user.last_name }}" />
+                      </div>
+                      <div class="col-12 col-md-4">
+                        <label for="inputPhone" class="form-label">Phone</label>
+                        <input type="tel" class="form-control" id="inputPhone" name="PhoneNumber" value="{{ user.PhoneNumber }}" />
+                      </div>
+                      <div class="col-12 col-md-4">
+                        <label for="inputEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="inputEmail" name="email" value="{{ user.email }}" />
+                      </div>
+                      <div class="col-12 col-md-4">
+                        <label for="inputAddress" class="form-label">Address</label>
+                        <input type="text" class="form-control" id="inputAddress" name="address" value="{{ user.address }}" />
+                      </div>
+                      <div class="col-12">
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                        <input type="hidden" name="user_role" value="{{ user.role }}" />
+                      </div>
+                    </form>
+                  </div>
+
+                  <div class="tab-pane fade" id="password-tab-pane" role="tabpanel" aria-labelledby="password-tab" tabindex="0">
+                    <form action="{% url 'core:change_password' %}" method="post" id="changePasswordForm">
+                      {% csrf_token %}
+                      <div class="row gy-3 gy-xxl-4">
+                        <div class="col-12" style="margin-top: 30px !important">
+                          <label for="currentPassword" class="form-label">Current Password</label>
+                          <input type="password" class="form-control" id="currentPassword" name="current_password" required />
+                        </div>
+                        <div class="col-12">
+                          <label for="newPassword" class="form-label">New Password</label>
+                          <input type="password" class="form-control" id="newPassword" name="new_password" required />
+                        </div>
+                        <div class="col-12">
+                          <label for="confirmPassword" class="form-label">Confirm Password</label>
+                          <input type="password" class="form-control" id="confirmPassword" name="confirm_password" required />
+                        </div>
+                        <div class="col-12">
+                          <button type="submit" class="btn btn-primary">Change Password</button>
+                        </div>
+                        <!-- Hidden input field for user role -->
+                        <input type="hidden" name="user_role" value="{{ user.role }}" />
+                      </div>
+                    </form>
+                  </div>
+
+                  <div class="tab-pane fade" id="transaction-tab-pane" role="tabpanel" aria-labelledby="transaction-tab">
+                    <div class="table-responsive mt-3">
+                      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal" style="margin-bottom: 10px;">Add Product</button>
+
+                      <div class="modal fade" id="addProductModal" tabindex="-1" aria-labelledby="addProductModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                          <div class="modal-content">
+                            <div class="modal-header">
+                              <h5 class="modal-title" id="addProductModalLabel">Add Product</h5>
+                              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                              <form id="addProductForm" enctype="multipart/form-data">
+                                <input type="hidden" id="sellerId" name="seller" value="{{ user.id }}" />
+                                <div class="mb-3">
+                                  <label for="productImage" class="form-label">Image</label>
+                                  <input type="file" class="form-control" id="productImage" name="image" required />
+                                </div>
+                                <div class="mb-3">
+                                  <label for="productName" class="form-label">Name</label>
+                                  <input type="text" class="form-control" id="productName" name="name" required />
+                                </div>
+                                <div class="mb-3">
+                                  <label for="productPrice" class="form-label">Price</label>
+                                  <input type="number" class="form-control" id="productPrice" name="price" required />
+                                </div>
+                                <div class="mb-3">
+                                  <label for="productStock" class="form-label">Stock</label>
+                                  <input type="number" class="form-control" id="productStock" name="stock" required />
+                                </div>
+                                <div class="mb-3">
+                                  <label class="form-label">Category</label>
+                                  <div>
+                                    <div class="form-check">
+                                      <input class="form-check-input" type="radio" name="category" id="categoryPainting" value="painting" required />
+                                      <label class="form-check-label" for="categoryPainting">Painting</label>
+                                    </div>
+                                    <div class="form-check">
+                                      <input class="form-check-input" type="radio" name="category" id="categoryHandicraft" value="handicraft" required />
+                                      <label class="form-check-label" for="categoryHandicraft">Handicraft</label>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div class="mb-3" id="subfilterContainer" style="display: none">
+                                  <label for="productType" class="form-label">Type</label>
+                                  <select class="form-control" id="productType" name="type"></select>
+                                </div>
+                                <div class="mb-3">
+                                  <label for="productDescription" class="form-label">Description</label>
+                                  <textarea class="form-control" id="productDescription" name="description" required style="height: 100px"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Add Product</button>
+                              </form>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <script>
+                        document.querySelectorAll('input[name="category"]').forEach(function (radio) {
+                          radio.addEventListener("change", function () {
+                            const subfilterContainer = document.getElementById("subfilterContainer");
+                            const subfilterSelect = document.getElementById("productType");
+                            subfilterSelect.innerHTML = ""; // Clear previous options
+
+                            if (this.value === "painting") {
+                              subfilterContainer.style.display = "block";
+                              const options = [
+                                "Acrylic ",
+                                "Digital ",
+                                "Oil ",
+                                "Watercolor ",
+                                "Pastel ",
+                                "Spray ",
+                                "Ink-wash ",
+                                "Encaustic ",
+                                "Fresco ",
+                                "Gouache ",
+                              ];
+                              options.forEach(function (option) {
+                                const opt = document.createElement("option");
+                                opt.value = option.split(" ")[0].toLowerCase() + " painting";
+                                opt.textContent = option;
+                                subfilterSelect.appendChild(opt);
+                              });
+                            } else if (this.value === "handicraft") {
+                              subfilterContainer.style.display = "block";
+                              const options = [
+                                "Crochet ",
+                                "Embroidery ",
+                                "Weaving ",
+                                "Macramé ",
+                                "Pottery & Ceramics ",
+                                "Woodcrafts ",
+                                "Origami & Papercrafts ",
+                                "Basketry ",
+                                "Quilts ",
+                                "Beadwork ",
+                              ];
+                              options.forEach(function (option) {
+                                const opt = document.createElement("option");
+                                opt.value = option.split(" ")[0].toLowerCase() + " handicraft";
+                                opt.textContent = option;
+                                subfilterSelect.appendChild(opt);
+                              });
+                            } else {
+                              subfilterContainer.style.display = "none";
+                            }
+                          });
+                        });
+                      </script>
+
+                      <!-- Edit Product Modal -->
+                      <div class="modal fade" id="editProductModal" tabindex="-1" aria-labelledby="editProductModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                          <div class="modal-content">
+                            <div class="modal-header">
+                              <h5 class="modal-title" id="editProductModalLabel">Edit Product</h5>
+                              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                              <form id="editProductForm" enctype="multipart/form-data">
+                                <input type="hidden" id="editProductId" name="product_id" />
+                                <div class="mb-3">
+                                  <label for="editProductImage" class="form-label">Image</label>
+                                  <input type="file" class="form-control" id="editProductImage" name="image" />
+                                  <label
+                                    >Current image:
+                                    <img id="editProductImagePreview" src="" alt="Product Image" style="max-width: 30%; margin-top: 10px; margin-left: 40px"
+                                  /></label>
+                                </div>
+                                <div class="mb-3">
+                                  <label for="editProductName" class="form-label">Name</label>
+                                  <input type="text" class="form-control" id="editProductName" name="name" required />
+                                </div>
+                                <div class="mb-3">
+                                  <label for="editProductPrice" class="form-label">Price</label>
+                                  <input type="number" class="form-control" id="editProductPrice" name="price" required />
+                                </div>
+                                <div class="mb-3">
+                                  <label for="editProductStock" class="form-label">Stock</label>
+                                  <input type="number" class="form-control" id="editProductStock" name="stock" required />
+                                </div>
+                                <div class="mb-3">
+                                  <label class="form-label">Category</label>
+                                  <div>
+                                    <div class="form-check">
+                                      <input class="form-check-input" type="radio" name="editCategory" id="editCategoryPainting" value="painting" required />
+                                      <label class="form-check-label" for="editCategoryPainting">Painting</label>
+                                    </div>
+                                    <div class="form-check">
+                                      <input
+                                        class="form-check-input"
+                                        type="radio"
+                                        name="editCategory"
+                                        id="editCategoryHandicraft"
+                                        value="handicraft"
+                                        required />
+                                      <label class="form-check-label" for="editCategoryHandicraft">Handicraft</label>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div class="mb-3" id="editSubfilterContainer" style="display: none">
+                                  <label for="editProductType" class="form-label">Type</label>
+                                  <select class="form-control" id="editProductType" name="type"></select>
+                                </div>
+                                <div class="mb-3">
+                                  <label for="editProductDescription" class="form-label">Description</label>
+                                  <textarea class="form-control" id="editProductDescription" name="description" required style="height: 100px"></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Save Changes</button>
+                              </form>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                          <thead>
+                            <tr>
+                              <th scope="col">#</th>
+                              <th scope="col" style="width: 10%">Image</th>
+                              <th scope="col">Name</th>
+                              <th scope="col">Stock</th>
+                              <th scope="col">Price</th>
+                              <th scope="col">Type</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for product in products %}
+                            <tr>
+                              <th scope="row">{{ forloop.counter }}</th>
+                              <td>
+                                <img src="{{ product.image.url }}" alt="Product Image" style="max-width: 30px" />
+                              </td>
+                              <td>{{ product.name }}</td>
+                              <td>{{ product.stock }}</td>
+                              <td>{{ product.price }}</td>
+                              <td>{{ product.type }}</td>
+                              <td>
+                                <button
+                                  class="btn btn-sm btn-primary edit-product-btn"
+                                  data-bs-toggle="modal"
+                                  data-bs-target="#editProductModal"
+                                  data-product-image="{{ product.image.url }}"
+                                  data-product-id="{{ product.id }}"
+                                  data-product-name="{{ product.name }}"
+                                  data-product-price="{{ product.price }}"
+                                  data-product-stock="{{ product.stock }}"
+                                  data-product-type="{{ product.type }}"
+                                  data-product-category="{{ product.category }}"
+                                  data-product-description="{{ product.description }}">
+                                  Edit
+                                </button>
+                                <button class="btn btn-sm btn-danger delete-product-btn" data-product-id="{{ product.id }}">Delete</button>
+                              </td>
+                            </tr>
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <script>
+                        document.querySelectorAll('.edit-product-btn').forEach(function(button) {
+                          button.addEventListener('click', function() {
+                            const productId = this.getAttribute('data-product-id');
+                            const productName = this.getAttribute('data-product-name');
+                            const productPrice = this.getAttribute('data-product-price');
+                            const productStock = this.getAttribute('data-product-stock');
+                            const productType = this.getAttribute('data-product-type');
+                            const productCategory = this.getAttribute('data-product-category');
+                            const productDescription = this.getAttribute('data-product-description');
+                            const productImage = this.getAttribute('data-product-image');
+                      
+                            document.getElementById('editProductId').value = productId;
+                            document.getElementById('editProductName').value = productName;
+                            document.getElementById('editProductPrice').value = productPrice;
+                            document.getElementById('editProductStock').value = productStock;
+                            document.getElementById('editProductDescription').value = productDescription;
+                            document.getElementById('editProductImagePreview').src = productImage;
+                      
+                            if (productCategory === 'painting') {
+                              document.getElementById('editCategoryPainting').checked = true;
+                              populateSubfilterOptions('painting', 'editProductType', productType);
+                              document.getElementById('editSubfilterContainer').style.display = 'block';
+                            } else if (productCategory === 'handicraft') {
+                              document.getElementById('editCategoryHandicraft').checked = true;
+                              populateSubfilterOptions('handicraft', 'editProductType', productType);
+                              document.getElementById('editSubfilterContainer').style.display = 'block';
+                            } else {
+                              document.getElementById('editSubfilterContainer').style.display = 'none';
+                            }
+                          });
+                        });
+                      
+                        document.querySelectorAll('input[name="editCategory"]').forEach(function(radio) {
+                          radio.addEventListener('change', function() {
+                            const selectedCategory = this.value;
+                            populateSubfilterOptions(selectedCategory, 'editProductType', '');
+                          });
+                        });
+                      
+                        function populateSubfilterOptions(category, selectId, selectedType) {
+                          const subfilterSelect = document.getElementById(selectId);
+                          subfilterSelect.innerHTML = ''; // Clear previous options
+                      
+                          let options = [];
+                          if (category === 'painting') {
+                            options = ['Acrylic', 'Digital', 'Oil', 'Watercolor', 'Pastel', 'Spray', 'Ink-wash', 'Encaustic', 'Fresco', 'Gouache'];
+                          } else if (category === 'handicraft') {
+                            options = ['Crochet', 'Embroidery', 'Weaving', 'Macramé', 'Pottery&Ceramics', 'Woodcrafts', 'Origami&PaperCrafts', 'Basketry', 'Quilts', 'Beadwork'];
+                          }
+                      
+                          options.forEach(function(option) {
+                            const opt = document.createElement('option');
+                            opt.value = option.toLowerCase();
+                            opt.textContent = option;
+                            subfilterSelect.appendChild(opt);
+                          });
+                      
+                          // Set the selected type
+                          const selectedTypeFirstPart = selectedType.split(' ')[0];
+                          subfilterSelect.value = selectedTypeFirstPart.toLowerCase();
+                        }
+                      
+                        document.getElementById('editProductImage').addEventListener('change', function(event) {
+                          const file = event.target.files[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                              document.getElementById('editProductImagePreview').src = e.target.result;
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        });
+                      
+                        document.getElementById('editProductForm').addEventListener('submit', function(event) {
+                          event.preventDefault();
+                          const formData = new FormData(this);
+                          const productId = document.getElementById('editProductId').value;
+                          const productCategory = document.querySelector('input[name="editCategory"]:checked').value;
+                          const productType = document.getElementById('editProductType').value + ' ' + productCategory;
+                      
+                          formData.set('type', productType);
+                      
+                          fetch(`/update_product/${productId}/`, {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                              'X-CSRFToken': getCookie('csrftoken')
+                            }
+                          })
+                          .then(response => {
+                            if (response.ok) {
+                              location.reload();
+                            } else {
+                              alert('Failed to save changes.');
+                            }
+                          });
+                        });
+                      
+                        document.querySelectorAll('.delete-product-btn').forEach(function(button) {
+                          button.addEventListener('click', function() {
+                            const productId = this.getAttribute('data-product-id');
+                            if (confirm('Are you sure you want to delete this product?')) {
+                              fetch(`/delete_product/${productId}/`, {
+                                method: 'DELETE',
+                                headers: {
+                                  'X-CSRFToken': getCookie('csrftoken')
+                                }
+                              })
+                              .then(response => {
+                                if (response.ok) {
+                                  location.reload();
+                                } else {
+                                  alert('Failed to delete product.');
+                                }
+                              });
+                            }
+                          });
+                        });
+                      
+                        function getCookie(name) {
+                          let cookieValue = null;
+                          if (document.cookie && document.cookie !== '') {
+                            const cookies = document.cookie.split(';');
+                            for (let i = 0; i < cookies.length; i++) {
+                              const cookie = cookies[i].trim();
+                              if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                                break;
+                              }
+                            }
+                          }
+                          return cookieValue;
+                        }
+                      </script>
+
+                      <!-- Pagination Controls -->
+                      <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center">
+                          {% if products.has_previous %}
+                          <li class="page-item">
+                            <a class="page-link" href="?page=1" aria-label="First">
+                              <span aria-hidden="true">&laquo;&laquo;</span>
+                            </a>
+                          </li>
+                          <li class="page-item">
+                            <a class="page-link" href="?page={{ products.previous_page_number }}" aria-label="Previous">
+                              <span aria-hidden="true">&laquo;</span>
+                            </a>
+                          </li>
+                          {% else %}
+                          <li class="page-item disabled">
+                            <a class="page-link" href="#" aria-label="First">
+                              <span aria-hidden="true">&laquo;&laquo;</span>
+                            </a>
+                          </li>
+                          <li class="page-item disabled">
+                            <a class="page-link" href="#" aria-label="Previous">
+                              <span aria-hidden="true">&laquo;</span>
+                            </a>
+                          </li>
+                          {% endif %} {% for num in products.paginator.page_range %} {% if products.number == num %}
+                          <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                          {% elif num > products.number|add:'-3' and num < products.number|add:'3' %}
+                          <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                          {% endif %} {% endfor %} {% if products.has_next %}
+                          <li class="page-item">
+                            <a class="page-link" href="?page={{ products.next_page_number }}" aria-label="Next">
+                              <span aria-hidden="true">&raquo;</span>
+                            </a>
+                          </li>
+                          <li class="page-item">
+                            <a class="page-link" href="?page={{ products.paginator.num_pages }}" aria-label="Last">
+                              <span aria-hidden="true">&raquo;&raquo;</span>
+                            </a>
+                          </li>
+                          {% else %}
+                          <li class="page-item disabled">
+                            <a class="page-link" href="#" aria-label="Next">
+                              <span aria-hidden="true">&raquo;</span>
+                            </a>
+                          </li>
+                          <li class="page-item disabled">
+                            <a class="page-link" href="#" aria-label="Last">
+                              <span aria-hidden="true">&raquo;&raquo;</span>
+                            </a>
+                          </li>
+                          {% endif %}
+                        </ul>
+                      </nav>
+                    </div>
+                  </div>
+
+                  <div class="tab-pane fade" id="order-tab-pane" role="tabpanel" aria-labelledby="order-tab">
+                    <div class="table-responsive mt-3">
+                      <table class="table table-striped table-hover" id="order-table">
+                        <thead>
+                          <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Buyer</th>
+                            <th scope="col">Product</th>
+                            <th scope="col">Quantity</th>
+                            <th scope="col">Price</th>
+                            <th scope="col">Date</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for transaction in transactions %}
+                          <tr id="transaction-{{ forloop.counter }}">
+                            <th scope="row">{{ forloop.counter }}</th>
+                            <td>{{ transaction.user.username }}</td>
+                            <td>{{ transaction.product.name }}</td>
+                            <td>{{ transaction.amount }}</td>
+                            <td>{{ transaction.product.price }}</td>
+                            <td>{{ transaction.date }}</td>
+                            <td>{{ transaction.status }}</td>
+                            <td>
+                              {% if transaction.status != 'In transit' and transaction.status != 'Delivered' %}
+                              <button class="btn btn-sm btn-primary change-status-btn" data-transaction-id="{{ transaction.id }}">In transit</button>
+                              {% endif %}
+                            </td>
+                          </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <!-- Pagination Controls for Orders -->
+                    <nav aria-label="Page navigation">
+                      <ul class="pagination justify-content-center">
+                        {% if transactions.has_previous %}
+                        <li class="page-item">
+                          <a class="page-link" href="?transaction_page=1" aria-label="First">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                          </a>
+                        </li>
+                        <li class="page-item">
+                          <a class="page-link" href="?transaction_page={{ transactions.previous_page_number }}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                          </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                          <a class="page-link" href="#" aria-label="First">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                          </a>
+                        </li>
+                        <li class="page-item disabled">
+                          <a class="page-link" href="#" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                          </a>
+                        </li>
+                        {% endif %} {% for num in transactions.paginator.page_range %} {% if transactions.number == num %}
+                        <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                        {% elif num > transactions.number|add:'-3' and num < transactions.number|add:'3' %}
+                        <li class="page-item"><a class="page-link" href="?transaction_page={{ num }}">{{ num }}</a></li>
+                        {% endif %} {% endfor %} {% if transactions.has_next %}
+                        <li class="page-item">
+                          <a class="page-link" href="?transaction_page={{ transactions.next_page_number }}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                          </a>
+                        </li>
+                        <li class="page-item">
+                          <a class="page-link" href="?transaction_page={{ transactions.paginator.num_pages }}" aria-label="Last">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                          </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled">
+                          <a class="page-link" href="#" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                          </a>
+                        </li>
+                        <li class="page-item disabled">
+                          <a class="page-link" href="#" aria-label="Last">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                          </a>
+                        </li>
+                        {% endif %}
+                      </ul>
+                    </nav>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- footer -->
+    <div class="footer-area" style="margin-top: 300px !important; bottom: 0 !important; width: 100% !important; padding: 10px !important; height: 25%">
+      <div class="container">
+        <div class="row justify-content-center">
+          <!-- Add justify-content-center -->
+
+          <div class="col-lg-3 col-md-6">
+            <div class="footer-box about-widget">
+              <!-- Add text-center -->
+              <h2 class="widget-title">About us</h2>
+              <p>
+                Ut enim ad minim veniam perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa
+                quae.
+              </p>
+            </div>
+          </div>
+
+          <div class="col-lg-3 col-md-6">
+            <div class="footer-box get-in-touch">
+              <!-- Add text-center -->
+              <h2 class="widget-title">Get in Touch</h2>
+              <ul>
+                <li>34/8, East Hukupara, Gifirtok, Sadan.</li>
+                <li>support@fruitkha.com</li>
+                <li>+00 111 222 3333</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- end footer -->
+
+    <!-- copyright -->
+    <div class="copyright">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-6 col-md-12">
+            <p>Copyrights &copy; 2024 - ASTIG, All Rights Reserved.</p>
+          </div>
+          <div class="col-lg-6 text-right col-md-12">
+            <div class="social-icons">
+              <ul>
+                <li>
+                  <a href="#" target="_blank"><i class="fab fa-facebook-f"></i></a>
+                </li>
+                <li>
+                  <a href="#" target="_blank"><i class="fab fa-twitter"></i></a>
+                </li>
+                <li>
+                  <a href="#" target="_blank"><i class="fab fa-instagram"></i></a>
+                </li>
+                <li>
+                  <a href="#" target="_blank"><i class="fab fa-linkedin"></i></a>
+                </li>
+                <li>
+                  <a href="#" target="_blank"><i class="fab fa-dribbble"></i></a>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- end copyright -->
+    <script src="/frontend/static/assets/js/prof_seller.js"></script>
+    <!-- jquery -->
+    <script src="{% static 'assets/js/jquery-1.11.3.min.js' %}"></script>
+    <!-- bootstrap -->
+    <script src="{% static 'assets/bootstrap/js/bootstrap.min.js' %}"></script>
+    <!-- count down -->
+    <script src="{% static 'assets/js/jquery.countdown.js' %}"></script>
+    <!-- isotope -->
+    <script src="{% static 'assets/js/jquery.isotope-3.0.6.min.js' %}"></script>
+    <!-- waypoints -->
+    <script src="{% static 'assets/js/waypoints.js' %}"></script>
+    <!-- owl carousel -->
+    <script src="{% static 'assets/js/owl.carousel.min.js' %}"></script>
+    <!-- magnific popup -->
+    <script src="{% static 'assets/js/jquery.magnific-popup.min.js' %}"></script>
+    <!-- mean menu -->
+    <script src="{% static 'assets/js/jquery.meanmenu.min.js' %}"></script>
+    <!-- sticker js -->
+    <script src="{% static 'assets/js/sticker.js' %}"></script>
+    <!-- main js -->
+    <script src="{% static 'assets/js/main.js' %}"></script>
+    <script src="https://unpkg.com/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+      document.getElementById("editImageButton").addEventListener("click", function () {
+        document.getElementById("imageInput").click();
+      });
+
+      document.getElementById("imageInput").addEventListener("change", function (event) {
+        const file = event.target.files[0];
+        if (file) {
+          const formData = new FormData();
+          formData.append("picture", file);
+
+          // Fetch the CSRF token from the cookie
+          const getCookie = (name) => {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== "") {
+              const cookies = document.cookie.split(";");
+              for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) === name + "=") {
+                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                  break;
+                }
+              }
+            }
+            return cookieValue;
+          };
+
+          const csrfToken = getCookie("csrftoken");
+
+          fetch("/api/upload_profile_picture/", {
+            method: "POST",
+            headers: {
+              "X-CSRFToken": csrfToken,
+            },
+            body: formData,
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                alert("Image uploaded successfully.");
+                location.reload(); // Reload the page to show the updated image
+              } else {
+                alert("Image upload failed: " + data.error);
+              }
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              alert("An error occurred during image upload. Please try again.");
+            });
+        }
+      });
+      //<------------------>
+
+      $(document).ready(function () {
+        // Function to set the active tab from local storage
+        function setActiveTab() {
+          var activeTab = localStorage.getItem("activeTab");
+          if (activeTab) {
+            var tabElement = $('[data-bs-target="' + activeTab + '"]');
+            tabElement.tab("show");
+          }
+        }
+
+        // Set the active tab on page load
+        setActiveTab();
+
+        // Store the active tab in local storage when a tab is clicked
+        $('button[data-bs-toggle="tab"]').on("shown.bs.tab", function (event) {
+          var activeTab = $(event.target).data("bs-target");
+          localStorage.setItem("activeTab", activeTab);
+        });
+
+        $("#addProductForm").on("submit", function (event) {
+          event.preventDefault();
+          var formData = new FormData(this);
+          $.ajax({
+            url: "{% url 'core:add_product' %}",
+            type: "POST",
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function (response) {
+              localStorage.setItem("activeTab", "#transaction-tab-pane"); // Ensure the active tab is set
+              location.reload(); // Reload the page to show the new product
+            },
+            error: function (response) {
+              alert("An error occurred. Please try again.");
+            },
+          });
+        });
+
+        // Handle In transit button click to change status
+        document.querySelectorAll(".change-status-btn").forEach(function (button) {
+          button.addEventListener("click", function () {
+            var transactionId = this.getAttribute("data-transaction-id");
+            console.log("Button clicked for transaction ID:", transactionId); // Debugging log
+
+            // Fetch the CSRF token from the cookie
+            const getCookie = (name) => {
+              let cookieValue = null;
+              if (document.cookie && document.cookie !== "") {
+                const cookies = document.cookie.split(";");
+                for (let i = 0; i < cookies.length; i++) {
+                  const cookie = cookies[i].trim();
+                  if (cookie.substring(0, name.length + 1) === name + "=") {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                  }
+                }
+              }
+              return cookieValue;
+            };
+
+            const csrfToken = getCookie("csrftoken");
+
+            fetch("{% url 'core:change_status' %}", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrfToken,
+              },
+              body: JSON.stringify({
+                transaction_id: transactionId,
+                status: "In transit",
+              }),
+            })
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.success) {
+                  console.log("Status changed successfully"); // Debugging log
+                  localStorage.setItem("activeTab", "#order-tab-pane"); // Ensure the active tab is set
+                  location.reload(); // Reload the page to show the updated status
+                } else {
+                  console.error("Error:", data.error); // Debugging log
+                  alert("Error: " + data.error);
+                }
+              })
+              .catch((error) => {
+                console.error("Error:", error); // Debugging log
+                alert("An error occurred. Please try again.");
+              });
+          });
+        });
+      });
+    </script>
+    <script src="{%static 'assets/js/prof_seller.js'%}"></script>
+  </body>
+</html>

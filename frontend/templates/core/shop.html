@@ -1,0 +1,236 @@
+{% extends 'partials/base.html' %} {% load static %} {% block content %}
+
+
+<!-- search area -->
+<div class="search-area">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-12">
+        <span class="close-btn"><i class="fas fa-window-close"></i></span>
+        <div class="search-bar">
+          <div class="search-bar-tablecell">
+            <h3>Search For:</h3>
+            <input type="text" placeholder="Keywords" />
+            <button type="submit">Search <i class="fas fa-search"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- end search area -->
+
+<!-- breadcrumb-section -->
+<div class="breadcrumb-section breadcrumb-bg">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 offset-lg-2 text-center">
+        <div class="breadcrumb-text">
+          <h1>Shop</h1>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- end breadcrumb section -->
+
+<!-- products -->
+<div class="product-section mt-150 mb-150">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-12" style="margin-bottom: -50px;">
+        <div class="product-filters">
+          <ul>
+            <li class="active" data-filter="*">All</li>
+            <li data-filter=".painting">Paintings</li>
+            <li data-filter=".handicraft">Handicrafts</li>
+          </ul>
+          <div class="filter-controls" style="display: flex; gap: 20px; align-items: center; padding-top: 50px;">
+            <select id="subFilter" class="form-select" style="display: none; width: 250px;">
+              <!-- Subfilter options will be dynamically populated -->
+            </select>
+            <div class="price-filter" style="width: 250px; margin-top: 25px; margin-left: 50px;">
+              <div id="price-range"></div>
+              <div class="price-values">
+                <label for="price-range">Price Range:</label> <span id="price-min"></span> - <span id="price-max"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row product-lists">
+      {% for product in products %}
+      <div class="col-lg-4 col-md-6 text-center product-item {{ product.type|lower }}" data-price="{{ product.price }}">
+        <div class="single-product-item">
+          <div class="product-image" style="height:250px; margin-bottom: 50px;">
+            <a href="{% url 'core:single_product' product.id %}">
+              <img src="{{ product.image.url }}" alt="{{ product.name }}" />
+            </a>
+          </div>
+          <h3>{{ product.name }}</h3>
+            <p class="product-price"><span>{{ product.type.split|first }}</span> ₱{{ product.price }}</p>
+          <a href="#" class="cart-btn add-to-cart" data-product-id="{{ product.id }}"><i class="fas fa-shopping-cart"></i> Add to Cart</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+<!-- end products -->
+
+<!-- Notification -->
+<div id="notification" style="display: none; position: fixed; top: 20px; right: 20px; background: #28a745; color: white; padding: 10px; border-radius: 5px; z-index: 1000;">
+  Item added to cart!
+</div>
+
+<!-- JavaScript for Filtering and Adding to Cart -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.isotope/3.0.6/isotope.pkgd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.6.3/nouislider.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.6.3/nouislider.min.css" />
+
+<script>
+  $(document).ready(function() {
+      const subFilters = {
+          painting: [
+              { value: 'painting', text: 'All' },
+              { value: 'oil', text: 'Oil Paintings' },
+              { value: 'watercolor', text: 'Watercolor Paintings' },
+              { value: 'acrylic', text: 'Acrylic Paintings' },
+              { value: 'digital', text: 'Digital Paintings' },
+              { value: 'pastel', text: 'Pastel Paintings' },
+              { value: 'spray', text: 'Spray Paintings' },
+              { value: 'ink-wash', text: 'Inkwash Paintings' },
+              { value: 'encaustic', text: 'Encaustic Paintings' },
+              { value: 'fresco', text: 'Fresco Paintings' },
+              { value: 'gouache', text: 'Gouache Paintings' },  
+          ],
+          handicraft: [
+              { value: 'handicraft', text: 'All' },
+              { value: 'crochet', text: 'Crochet' },
+              { value: 'embroidery', text: 'Embroidery' },
+              { value: 'weaving', text: 'Weaving' },
+              { value: 'macramé', text: 'Macramé' },
+              { value: 'pottery', text: 'Pottery & Ceramics' },
+              { value: 'woodcrafts', text: 'Woodcrafts' },
+              { value: 'origami', text: 'Origami & PaperCrafts' },
+              { value: 'basketry', text: 'Basketry' },
+              { value: 'quilts', text: 'Quilts' },
+              { value: 'beadwork', text: 'Beadwork' }
+          ]
+      };
+  
+      let currentFilter = '*';
+      let minPrice = 0;
+      let maxPrice = Math.max(...$('.product-item').map(function() {
+          return parseFloat($(this).data('price'));
+      }).get());
+  
+      $(".product-filters li").on('click', function () {
+          $(".product-filters li").removeClass("active");
+          $(this).addClass("active");
+  
+          currentFilter = $(this).attr('data-filter');
+  
+          if (currentFilter === '*') {
+              $('#subFilter').hide().empty();
+          } else {
+              $('#subFilter').empty().show();
+              subFilters[currentFilter.substring(1)].forEach(subFilter => {
+                  $('#subFilter').append(new Option(subFilter.text, subFilter.value));
+              });
+              $('#subFilter').val(currentFilter.substring(1)).trigger('change');
+          }
+  
+          filterProducts();
+      });
+  
+      $('#subFilter').on('change', function() {
+          filterProducts();
+      });
+  
+      // Initialize price range slider
+      var priceSlider = document.getElementById('price-range');
+      noUiSlider.create(priceSlider, {
+          start: [0, maxPrice],
+          connect: true,
+          range: {
+              'min': 0,
+              'max': maxPrice
+          },
+          step: 100,
+          tooltips: true,
+          format: {
+              to: function (value) {
+                  return '₱' + value.toFixed(0);
+              },
+              from: function (value) {
+                  return Number(value.replace('₱', ''));
+              }
+          }
+      });
+  
+      priceSlider.noUiSlider.on('update', function (values, handle) {
+          minPrice = parseFloat(values[0].replace('₱', ''));
+          maxPrice = parseFloat(values[1].replace('₱', ''));
+  
+          $('#price-min').text(values[0]);
+          $('#price-max').text(values[1]);
+  
+          filterProducts();
+      });
+  
+      function filterProducts() {
+          let subFilter = $('#subFilter').val();
+          let filterValue = currentFilter;
+  
+          if (subFilter && subFilter !== 'painting' && subFilter !== 'handicraft') {
+              filterValue = '.' + subFilter;
+          }
+  
+          $(".product-lists").isotope({
+              filter: function() {
+                  let price = parseFloat($(this).data('price'));
+                  let categoryMatch = filterValue === '*' || $(this).hasClass(filterValue.substring(1));
+                  let priceMatch = price >= minPrice && price <= maxPrice;
+                  return categoryMatch && priceMatch;
+              }
+          });
+      }
+  
+      // Add to Cart functionality
+      $('.add-to-cart').on('click', function(event) {
+          event.preventDefault();
+          const productId = $(this).data('product-id');
+  
+          fetch(`{% url 'core:add_to_cart' 0 %}`.replace('0', productId), {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/x-www-form-urlencoded',
+                  'X-CSRFToken': '{{ csrf_token }}'
+              }
+          })
+          .then(response => response.json())
+          .then((data) => {
+              if (data.error) {
+                  alert(data.error);
+              } else {
+                const cartIcon = document.querySelector(".shopping-cart");
+                const newCartCountElement = document.createElement("span");
+                newCartCountElement.className = "cart-count";
+                newCartCountElement.textContent = data.total_items;
+                cartIcon.appendChild(newCartCountElement);
+              }
+  
+              // Show notification
+              $('#notification').text('Item added to cart!').fadeIn().delay(2000).fadeOut();
+            }
+      )
+          .catch((error) => console.error("Error:", error));
+      });
+  });
+  </script>
+
+{% endblock content %}

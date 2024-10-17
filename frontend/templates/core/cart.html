@@ -1,0 +1,260 @@
+{% extends 'partials/base.html' %} {% load static %} {% block content %}
+
+<!-- Modal -->
+<div
+  class="modal fade"
+  id="confirmDeleteModal"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="confirmDeleteModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmDeleteModalLabel">Confirm Deletion</h5>
+        <button
+          type="button"
+          class="close"
+          data-dismiss="modal"
+          aria-label="Close"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">Are you sure you want to remove this item from the cart?</div>
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          data-dismiss="modal"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="btn btn-danger"
+          id="confirmDeleteButton"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- search area -->
+<div class="search-area">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-12">
+        <span class="close-btn"><i class="fas fa-window-close"></i></span>
+        <div class="search-bar">
+          <div class="search-bar-tablecell">
+            <h3>Search For:</h3>
+            <input type="text" placeholder="Keywords" />
+            <button type="submit">Search <i class="fas fa-search"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- end search area -->
+
+<!-- breadcrumb-section -->
+<div class="breadcrumb-section breadcrumb-bg">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 offset-lg-2 text-center">
+        <div class="breadcrumb-text">
+          <h1>Cart</h1>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- end breadcrumb section -->
+
+<!-- cart -->
+<div class="cart-section mt-150 mb-150">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-md-12">
+        <div class="cart-table-wrap">
+          <table class="cart-table">
+            <thead class="cart-table-head">
+              <tr class="table-head-row">
+                <th class="product-remove"></th>
+                <th class="product-image">Product Image</th>
+                <th class="product-name">Name</th>
+                <th class="product-price">Price</th>
+                <th class="product-quantity">Quantity</th>
+                <th class="product-total">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in cart_items %}
+              <tr class="table-body-row" data-item-id="{{ item.id }}">
+                <td class="product-remove">
+                  <a href="#" class="remove-item" data-item-id="{{ item.id }}">
+                    <i class="far fa-window-close"></i>
+                  </a>
+                </td>
+                <td class="product-image">
+                  <img
+                    src="{{ item.product.image.url }}"
+                    alt="{{ item.product.name }}"
+                  />
+                </td>
+                <td class="product-name">{{ item.product.name }}</td>
+                <td class="product-price">₱{{ item.product.price }}</td>
+                <td class="product-quantity">
+                  <input
+                    type="number"
+                    value="{{ item.quantity }}"
+                    min="1"
+                    max="{{ item.product.stock }}"
+                    class="quantity-input"
+                    data-item-id="{{ item.id }}"
+                  />
+                </td>
+                <td class="product-total">
+                  ₱<span class="item-total-price">{{ item.total_price }}</span>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="total-section">
+          <table class="total-table">
+            <thead class="total-table-head">
+              <tr class="table-total-row">
+                <th>Total</th>
+                <th>Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="total-data">
+                <td><strong>Subtotal: </strong></td>
+                <td>₱<span id="subtotal">{{ total_price }}</span></td>
+              </tr>
+              <tr class="total-data">
+                <td><strong>Shipping: </strong></td>
+                <td>₱45</td>
+              </tr>
+              <tr class="total-data">
+                <td><strong>Total: </strong></td>
+                <td>₱<span id="total">{{ total_price|add:45 }}</span></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="cart-buttons">
+            <a href="checkout.html" class="boxed-btn black">Check Out</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- end cart -->
+
+<!-- Notification -->
+<div id="notification" style="display: none; position: fixed; top: 20px; right: 20px; background: #28a745; color: white; padding: 10px; border-radius: 5px; z-index: 1000;">
+  Item removed from cart!
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const quantityInputs = document.querySelectorAll(".quantity-input");
+    const removeButtons = document.querySelectorAll(".remove-item");
+    let itemIdToDelete;
+
+    quantityInputs.forEach((input) => {
+      input.addEventListener("change", function () {
+        const itemId = this.dataset.itemId;
+        const quantity = this.value;
+
+        fetch(`{% url 'core:update_cart_item' 0 %}`.replace("0", itemId), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-CSRFToken": "{{ csrf_token }}",
+          },
+          body: new URLSearchParams({
+            quantity: quantity,
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.error) {
+              alert(data.error);
+            } else {
+              const itemRow = document.querySelector(
+                `tr[data-item-id="${itemId}"]`
+              );
+              itemRow.querySelector(".item-total-price").textContent =
+                data.item_total_price;
+              document.getElementById("subtotal").textContent =
+                data.total_price;
+              document.getElementById("total").textContent =
+                (parseFloat(data.total_price) + 45).toFixed(2);
+            }
+          })
+          .catch((error) => console.error("Error:", error));
+      });
+    });
+
+    removeButtons.forEach((button) => {
+      button.addEventListener("click", function (event) {
+        event.preventDefault();
+        itemIdToDelete = this.dataset.itemId;
+        $("#confirmDeleteModal").modal("show");
+      });
+    });
+
+    document
+      .getElementById("confirmDeleteButton")
+      .addEventListener("click", function () {
+        fetch(`{% url 'core:remove_from_cart' 0 %}`.replace("0", itemIdToDelete), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-CSRFToken": "{{ csrf_token }}",
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.error) {
+              alert(data.error);
+            } else {
+              const itemRow = document.querySelector(
+                `tr[data-item-id="${itemIdToDelete}"]`
+              );
+              itemRow.remove();
+              document.getElementById("subtotal").textContent =
+                data.total_price;
+              document.getElementById("total").textContent =
+                (parseFloat(data.total_price) + 45).toFixed(2);
+  
+              // Show notification
+              $("#notification")
+                .text("Item removed from cart!")
+                .fadeIn()
+                .delay(2000)
+                .fadeOut();
+            }
+          })
+          .catch((error) => console.error("Error:", error))
+          .finally(() => {
+            $("#confirmDeleteModal").modal("hide");
+          });
+      });
+  });
+</script>
+
+{% endblock content %}

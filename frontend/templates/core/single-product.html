@@ -1,0 +1,137 @@
+{% extends 'partials/base.html' %} {% load static %} {% block content %}
+
+<!-- breadcrumb-section -->
+<div class="breadcrumb-section breadcrumb-bg">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 offset-lg-2 text-center">
+        <div class="breadcrumb-text">
+          <h1>{{ product.name }}</h1>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- end breadcrumb section -->
+
+<!-- single product -->
+<div class="single-product mt-150 mb-150">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-5">
+        <div class="single-product-img">
+          <img src="{{ product.image.url }}" alt="{{ product.name }}"/>
+        </div>
+      </div>
+      <div class="col-md-7">
+        <div class="single-product-content">
+          <h3>{{ product.name }}</h3>
+          <p class="single-product-pricing"><span>{{ product.type.split|first }}</span> ₱{{ product.price }}</p>
+          <p>Stocks: {{ product.stock }}</p>
+          <p>{{ product.description }}</p>
+          <div class="single-product-form">
+            <input type="number" placeholder="1" min="1" max="{{ product.stock }}" id="quantity-input" value="1" />
+            <br />
+            <a href="#" class="cart-btn add-to-cart" data-product-id="{{ product.id }}"><i class="fas fa-shopping-cart"></i> Add to Cart</a>
+            <p><strong>Categories: </strong>{{ product.category }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- end single product -->
+
+<!-- more products -->
+<div class="more-products mb-150">
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 offset-lg-2 text-center">
+        <div class="section-title">
+          <h3><span class="orange-text">Related</span> Products</h3>
+          <p>Browse other products that you might like.</p>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      {% for product in related_products %}
+      <div class="col-lg-4 col-md-6 text-center">
+        <div class="single-product-item">
+          <div class="product-image" style="height: 250px; margin-bottom: 50px">
+            <a href="{% url 'core:single_product' product.id %}">
+              <img src="{{ product.image.url }}" alt="{{ product.name }}"/>
+            </a>
+          </div>
+          <h3>{{ product.name }}</h3>
+          <p class="product-price"><span>{{ product.type.split|first }}</span> {{ product.price }}₱</p>
+          <a href="#" class="cart-btn add-to-cart" data-product-id="{{ product.id }}"><i class="fas fa-shopping-cart"></i> Add to Cart</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+<!-- end more products -->
+
+<!-- Notification -->
+<div
+  id="notification"
+  style="display: none; position: fixed; top: 20px; right: 20px; background: #28a745; color: white; padding: 10px; border-radius: 5px; z-index: 1000">
+  Item added to cart!
+</div>
+
+<!-- Include jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- JavaScript for Adding to Cart -->
+<script>
+  $(document).ready(function () {
+    $(".add-to-cart").on("click", function (event) {
+      event.preventDefault();
+      const productId = $(this).data("product-id");
+      const quantityInput = $("#quantity-input");
+      let quantity = quantityInput.val();
+
+      // Ensure quantity is set to 1 if it's empty or invalid
+      if (!quantity || quantity < 1) {
+        quantity = 1;
+        quantityInput.val(quantity); // Update the input field to reflect the default value
+      }
+
+      fetch(`{% url 'core:add_to_cart' 0 %}`.replace("0", productId), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "X-CSRFToken": "{{ csrf_token }}",
+        },
+        body: new URLSearchParams({
+          quantity: quantity,
+        }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.error) {
+            alert(data.error);
+          } else {
+            // Update the cart item count dynamically
+            const cartCountElement = document.querySelector(".cart-count");
+            if (cartCountElement) {
+              cartCountElement.textContent = data.total_items;
+            } else {
+              const cartIcon = document.querySelector(".shopping-cart");
+              const newCartCountElement = document.createElement("span");
+              newCartCountElement.className = "cart-count";
+              newCartCountElement.textContent = data.total_items;
+              cartIcon.appendChild(newCartCountElement);
+            }
+
+            // Show notification
+            $("#notification").text("Item added to cart!").fadeIn().delay(2000).fadeOut();
+          }
+        })
+        .catch((error) => console.error("Error:", error));
+    });
+  });
+</script>
+
+{% endblock content %}
