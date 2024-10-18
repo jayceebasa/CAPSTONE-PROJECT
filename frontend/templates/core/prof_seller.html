@@ -167,6 +167,20 @@
                   <li class="nav-item" role="presentation">
                     <button
                       class="nav-link"
+                      id="address-tab"
+                      data-bs-toggle="tab"
+                      data-bs-target="#address-tab-pane"
+                      type="button"
+                      role="tab"
+                      aria-controls="address-tab-pane"
+                      aria-selected="false">
+                      Addresses
+                    </button>
+                  </li>
+
+                  <li class="nav-item" role="presentation">
+                    <button
+                      class="nav-link"
                       id="password-tab"
                       data-bs-toggle="tab"
                       data-bs-target="#password-tab-pane"
@@ -206,6 +220,18 @@
                     </button>
                   </li>
                 </ul>
+
+                <script>
+                  document.addEventListener("DOMContentLoaded", function () {
+                    const tabs = document.querySelectorAll('#profileTab button[data-bs-toggle="tab"]');
+                    tabs.forEach((tab) => {
+                      tab.addEventListener("shown.bs.tab", function (event) {
+                        history.pushState(null, "", "/seller/");
+                      });
+                    });
+                  });
+                </script>
+
                 <div class="tab-content pt-1" id="profileTabContent" style="height: 286px !important">
                   <div class="tab-pane fade show active" id="overview-tab-pane" role="tabpanel" aria-labelledby="overview-tab" tabindex="0">
                     <h5 class="mb-3">Profile</h5>
@@ -243,6 +269,18 @@
                       </div>
                     </div>
                   </div>
+
+                  <!-- Address Tab -->
+                  <div class="tab-pane fade" id="address-tab-pane" role="tabpanel" aria-labelledby="address-tab" tabindex="0">
+                    <div id="addressCardsContainer" class="mb-3">
+                      <!-- Address cards will be appended here -->
+                    </div>
+                    <button type="button" class="btn btn-success" id="addAddressButton" data-bs-toggle="modal" data-bs-target="#editAddressModal">
+                      Add Address
+                    </button>
+                    <button type="button" class="btn btn-primary" id="saveSelectedAddressButton">Save Address</button>
+                  </div>
+
                   <div class="tab-pane fade" id="profile-tab-pane" role="tabpanel" aria-labelledby="profile-tab" tabindex="0">
                     <form action="{% url 'core:update_profile' %}" method="post" class="row gy-3 gy-xxl-4">
                       {% csrf_token %}
@@ -263,16 +301,316 @@
                         <label for="inputEmail" class="form-label">Email</label>
                         <input type="email" class="form-control" id="inputEmail" name="email" value="{{ user.email }}" />
                       </div>
-                      <div class="col-12 col-md-4">
-                        <label for="inputAddress" class="form-label">Address</label>
-                        <input type="text" class="form-control" id="inputAddress" name="address" value="{{ user.address }}" />
-                      </div>
+
                       <div class="col-12">
                         <button type="submit" class="btn btn-primary">Save Changes</button>
                         <input type="hidden" name="user_role" value="{{ user.role }}" />
                       </div>
                     </form>
                   </div>
+
+                  <!-- Edit Address Modal -->
+                  <div class="modal fade" id="editAddressModal" tabindex="-1" aria-labelledby="editAddressModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h5 class="modal-title" id="editAddressModalLabel">Edit Address</h5>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                          <form id="addressForm">
+                            <div class="mb-3">
+                              <label for="regionSelect" class="form-label">Region</label>
+                              <select class="form-select" id="regionSelect" required></select>
+                            </div>
+                            <div class="mb-3">
+                              <label for="provinceSelect" class="form-label">Province</label>
+                              <select class="form-select" id="provinceSelect" required></select>
+                            </div>
+                            <div class="mb-3">
+                              <label for="citySelect" class="form-label">City/Municipality</label>
+                              <select class="form-select" id="citySelect" required></select>
+                            </div>
+                            <div class="mb-3">
+                              <label for="barangaySelect" class="form-label">Barangay</label>
+                              <select class="form-select" id="barangaySelect" required></select>
+                            </div>
+                            <div class="mb-3">
+                              <label for="exactAddress" class="form-label">Exact Address</label>
+                              <input type="text" class="form-control" id="exactAddress" required />
+                            </div>
+                          </form>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                          <button type="button" class="btn btn-primary" id="saveAddressButton">Save Address</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <script>
+                    const PSGC_API_BASE_URL = "https://psgc.gitlab.io/api";
+                    let addresses = [];
+                    let selectedAddress = "";
+
+                    document.addEventListener("DOMContentLoaded", async function () {
+                      await fetchAddresses();
+                      displayAddressCards();
+                    });
+
+                    document.getElementById("addAddressButton").addEventListener("click", function () {
+                      // Clear the form fields
+                      document.getElementById("regionSelect").innerHTML = '<option value="">Select Region</option>';
+                      document.getElementById("provinceSelect").innerHTML = '<option value="">Select Province</option>';
+                      document.getElementById("citySelect").innerHTML = '<option value="">Select City/Municipality</option>';
+                      document.getElementById("barangaySelect").innerHTML = '<option value="">Select Barangay</option>';
+                      document.getElementById("exactAddress").value = "";
+
+                      // Populate the regions dropdown
+                      populateRegions();
+                    });
+
+                    document.getElementById("regionSelect").addEventListener("change", async function () {
+                      const regionCode = this.value;
+                      await populateProvinces(regionCode);
+                    });
+
+                    document.getElementById("provinceSelect").addEventListener("change", async function () {
+                      const provinceCode = this.value;
+                      await populateCitiesOrMunicipalities(provinceCode, "province");
+                    });
+
+                    document.getElementById("citySelect").addEventListener("change", async function () {
+                      const cityMunicipalityCode = this.value;
+                      await populateBarangays(cityMunicipalityCode);
+                    });
+
+                    document.getElementById("saveAddressButton").addEventListener("click", async function () {
+                      const region = document.getElementById("regionSelect").selectedOptions[0].text;
+                      const province = document.getElementById("provinceSelect").selectedOptions[0].text;
+                      const city = document.getElementById("citySelect").selectedOptions[0].text;
+                      const barangay = document.getElementById("barangaySelect").selectedOptions[0].text;
+                      const exactAddress = document.getElementById("exactAddress").value;
+                      const fullAddress = `${exactAddress}, ${barangay}, ${city}, ${province}, ${region}`;
+
+                      try {
+                        const response = await fetch("/save-address/", {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRFToken": getCookie("csrftoken"),
+                          },
+                          body: JSON.stringify({ address: fullAddress }),
+                        });
+
+                        const result = await response.json();
+                        if (result.success) {
+                          await fetchAddresses();
+                          displayAddressCards();
+                          const modal = bootstrap.Modal.getInstance(document.getElementById("editAddressModal"));
+                          modal.hide();
+                        } else {
+                          console.error("Error saving address:", result.error);
+                        }
+                      } catch (error) {
+                        console.error("Error saving address:", error);
+                      }
+                    });
+
+                    document.getElementById("saveSelectedAddressButton").addEventListener("click", async function () {
+                      const selectedAddress = document.querySelector('input[name="defaultAddress"]:checked').value;
+                      await saveSelectedAddress(selectedAddress);
+                    });
+
+                    async function fetchAddresses() {
+                      try {
+                        const response = await fetch("/get-addresses/");
+                        const result = await response.json();
+                        if (result.success) {
+                          addresses = result.addresses;
+                          selectedAddress = result.selectedAddress;
+                        } else {
+                          console.error("Error fetching addresses:", result.error);
+                        }
+                      } catch (error) {
+                        console.error("Error fetching addresses:", error);
+                      }
+                    }
+
+                    function displayAddressCards() {
+                      const container = document.getElementById("addressCardsContainer");
+                      container.innerHTML = "";
+                      addresses.forEach((address, index) => {
+                        const addressCard = document.createElement("div");
+                        addressCard.className = "card mb-3";
+                        addressCard.innerHTML = `
+                          <div class="card-body">
+                            <div class="form-check">
+                              <input class="form-check-input" type="radio" name="defaultAddress" id="address${index}" value="${address}" ${
+                          address === selectedAddress ? "checked" : ""
+                        }>
+                              <label class="form-check-label" for="address${index}">
+                                ${address}
+                              </label>
+                            </div>
+                          </div>
+                        `;
+                        addressCard.querySelector('input[type="radio"]').addEventListener("change", function () {
+                          selectedAddress = address;
+                        });
+                        container.appendChild(addressCard);
+                      });
+                    }
+
+                    async function saveSelectedAddress(address) {
+                      try {
+                        const response = await fetch("/save-selected-address/", {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/x-www-form-urlencoded",
+                            "X-CSRFToken": getCookie("csrftoken"),
+                          },
+                          body: new URLSearchParams({ address: address }),
+                        });
+
+                        const result = await response.json();
+                        if (result.success) {
+                          window.location.reload(); // Refresh the page after saving the address
+                        } else {
+                          console.error("Error saving selected address:", result.error);
+                        }
+                      } catch (error) {
+                        console.error("Error saving selected address:", error);
+                      }
+                    }
+
+                    function getCookie(name) {
+                      let cookieValue = null;
+                      if (document.cookie && document.cookie !== "") {
+                        const cookies = document.cookie.split("; ");
+                        for (let i = 0; i < cookies.length; i++) {
+                          const cookie = cookies[i].trim();
+                          if (cookie.substring(0, name.length + 1) === name + "=") {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                          }
+                        }
+                      }
+                      return cookieValue;
+                    }
+
+                    async function populateRegions(selectedRegion = "") {
+                      try {
+                        const response = await fetch(`${PSGC_API_BASE_URL}/regions/`);
+                        const regions = await response.json();
+                        const regionSelect = document.getElementById("regionSelect");
+                        regionSelect.innerHTML = '<option value="">Select Region</option>';
+                        regions.forEach((region) => {
+                          const option = document.createElement("option");
+                          option.value = region.code;
+                          option.textContent = region.name;
+                          if (region.name === selectedRegion) {
+                            option.selected = true;
+                          }
+                          regionSelect.appendChild(option);
+                        });
+                        if (selectedRegion) {
+                          const selectedOption = Array.from(regionSelect.options).find((option) => option.text === selectedRegion);
+                          if (selectedOption) {
+                            regionSelect.value = selectedOption.value;
+                            await populateProvinces(selectedOption.value);
+                          }
+                        }
+                      } catch (error) {
+                        console.error("Error fetching regions:", error);
+                      }
+                    }
+
+                    async function populateProvinces(regionCode, selectedProvince = "") {
+                      try {
+                        const response = await fetch(`${PSGC_API_BASE_URL}/regions/${regionCode}/provinces/`);
+                        const provinces = await response.json();
+                        const provinceSelect = document.getElementById("provinceSelect");
+                        provinceSelect.innerHTML = '<option value="">Select Province</option>';
+                        provinces.forEach((province) => {
+                          const option = document.createElement("option");
+                          option.value = province.code;
+                          option.textContent = province.name;
+                          if (province.name === selectedProvince) {
+                            option.selected = true;
+                          }
+                          provinceSelect.appendChild(option);
+                        });
+                        if (selectedProvince) {
+                          const selectedOption = Array.from(provinceSelect.options).find((option) => option.text === selectedProvince);
+                          if (selectedOption) {
+                            provinceSelect.value = selectedOption.value;
+                            await populateCitiesOrMunicipalities(selectedOption.value, "province");
+                          }
+                        }
+                      } catch (error) {
+                        console.error("Error fetching provinces:", error);
+                      }
+                    }
+
+                    async function populateCitiesOrMunicipalities(code, type, selectedCity = "") {
+                      try {
+                        const endpoint =
+                          type === "region"
+                            ? `${PSGC_API_BASE_URL}/regions/${code}/cities-municipalities/`
+                            : `${PSGC_API_BASE_URL}/provinces/${code}/cities-municipalities/`;
+                        const response = await fetch(endpoint);
+                        const cities = await response.json();
+                        const citySelect = document.getElementById("citySelect");
+                        citySelect.innerHTML = '<option value="">Select City/Municipality</option>';
+                        cities.forEach((city) => {
+                          const option = document.createElement("option");
+                          option.value = city.code;
+                          option.textContent = city.name;
+                          if (city.name === selectedCity) {
+                            option.selected = true;
+                          }
+                          citySelect.appendChild(option);
+                        });
+                        if (selectedCity) {
+                          const selectedOption = Array.from(citySelect.options).find((option) => option.text === selectedCity);
+                          if (selectedOption) {
+                            citySelect.value = selectedOption.value;
+                            await populateBarangays(selectedOption.value);
+                          }
+                        }
+                      } catch (error) {
+                        console.error("Error fetching cities or municipalities:", error);
+                      }
+                    }
+
+                    async function populateBarangays(cityMunicipalityCode, selectedBarangay = "") {
+                      try {
+                        const response = await fetch(`${PSGC_API_BASE_URL}/cities-municipalities/${cityMunicipalityCode}/barangays/`);
+                        const barangays = await response.json();
+                        const barangaySelect = document.getElementById("barangaySelect");
+                        barangaySelect.innerHTML = '<option value="">Select Barangay</option>';
+                        barangays.forEach((barangay) => {
+                          const option = document.createElement("option");
+                          option.value = barangay.code;
+                          option.textContent = barangay.name;
+                          if (barangay.name === selectedBarangay) {
+                            option.selected = true;
+                          }
+                          barangaySelect.appendChild(option);
+                        });
+                        if (selectedBarangay) {
+                          const selectedOption = Array.from(barangaySelect.options).find((option) => option.text === selectedBarangay);
+                          if (selectedOption) {
+                            barangaySelect.value = selectedOption.value;
+                          }
+                        }
+                      } catch (error) {
+                        console.error("Error fetching barangays:", error);
+                      }
+                    }
+                  </script>
 
                   <div class="tab-pane fade" id="password-tab-pane" role="tabpanel" aria-labelledby="password-tab" tabindex="0">
                     <form action="{% url 'core:change_password' %}" method="post" id="changePasswordForm">
@@ -301,7 +639,9 @@
 
                   <div class="tab-pane fade" id="transaction-tab-pane" role="tabpanel" aria-labelledby="transaction-tab">
                     <div class="table-responsive mt-3">
-                      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal" style="margin-bottom: 10px;">Add Product</button>
+                      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal" style="margin-bottom: 10px">
+                        Add Product
+                      </button>
 
                       <div class="modal fade" id="addProductModal" tabindex="-1" aria-labelledby="addProductModalLabel" aria-hidden="true">
                         <div class="modal-dialog">
@@ -523,132 +863,141 @@
                       </div>
 
                       <script>
-                        document.querySelectorAll('.edit-product-btn').forEach(function(button) {
-                          button.addEventListener('click', function() {
-                            const productId = this.getAttribute('data-product-id');
-                            const productName = this.getAttribute('data-product-name');
-                            const productPrice = this.getAttribute('data-product-price');
-                            const productStock = this.getAttribute('data-product-stock');
-                            const productType = this.getAttribute('data-product-type');
-                            const productCategory = this.getAttribute('data-product-category');
-                            const productDescription = this.getAttribute('data-product-description');
-                            const productImage = this.getAttribute('data-product-image');
-                      
-                            document.getElementById('editProductId').value = productId;
-                            document.getElementById('editProductName').value = productName;
-                            document.getElementById('editProductPrice').value = productPrice;
-                            document.getElementById('editProductStock').value = productStock;
-                            document.getElementById('editProductDescription').value = productDescription;
-                            document.getElementById('editProductImagePreview').src = productImage;
-                      
-                            if (productCategory === 'painting') {
-                              document.getElementById('editCategoryPainting').checked = true;
-                              populateSubfilterOptions('painting', 'editProductType', productType);
-                              document.getElementById('editSubfilterContainer').style.display = 'block';
-                            } else if (productCategory === 'handicraft') {
-                              document.getElementById('editCategoryHandicraft').checked = true;
-                              populateSubfilterOptions('handicraft', 'editProductType', productType);
-                              document.getElementById('editSubfilterContainer').style.display = 'block';
+                        document.querySelectorAll(".edit-product-btn").forEach(function (button) {
+                          button.addEventListener("click", function () {
+                            const productId = this.getAttribute("data-product-id");
+                            const productName = this.getAttribute("data-product-name");
+                            const productPrice = this.getAttribute("data-product-price");
+                            const productStock = this.getAttribute("data-product-stock");
+                            const productType = this.getAttribute("data-product-type");
+                            const productCategory = this.getAttribute("data-product-category");
+                            const productDescription = this.getAttribute("data-product-description");
+                            const productImage = this.getAttribute("data-product-image");
+
+                            document.getElementById("editProductId").value = productId;
+                            document.getElementById("editProductName").value = productName;
+                            document.getElementById("editProductPrice").value = productPrice;
+                            document.getElementById("editProductStock").value = productStock;
+                            document.getElementById("editProductDescription").value = productDescription;
+                            document.getElementById("editProductImagePreview").src = productImage;
+
+                            if (productCategory === "painting") {
+                              document.getElementById("editCategoryPainting").checked = true;
+                              populateSubfilterOptions("painting", "editProductType", productType);
+                              document.getElementById("editSubfilterContainer").style.display = "block";
+                            } else if (productCategory === "handicraft") {
+                              document.getElementById("editCategoryHandicraft").checked = true;
+                              populateSubfilterOptions("handicraft", "editProductType", productType);
+                              document.getElementById("editSubfilterContainer").style.display = "block";
                             } else {
-                              document.getElementById('editSubfilterContainer').style.display = 'none';
+                              document.getElementById("editSubfilterContainer").style.display = "none";
                             }
                           });
                         });
-                      
-                        document.querySelectorAll('input[name="editCategory"]').forEach(function(radio) {
-                          radio.addEventListener('change', function() {
+
+                        document.querySelectorAll('input[name="editCategory"]').forEach(function (radio) {
+                          radio.addEventListener("change", function () {
                             const selectedCategory = this.value;
-                            populateSubfilterOptions(selectedCategory, 'editProductType', '');
+                            populateSubfilterOptions(selectedCategory, "editProductType", "");
                           });
                         });
-                      
+
                         function populateSubfilterOptions(category, selectId, selectedType) {
                           const subfilterSelect = document.getElementById(selectId);
-                          subfilterSelect.innerHTML = ''; // Clear previous options
-                      
+                          subfilterSelect.innerHTML = ""; // Clear previous options
+
                           let options = [];
-                          if (category === 'painting') {
-                            options = ['Acrylic', 'Digital', 'Oil', 'Watercolor', 'Pastel', 'Spray', 'Ink-wash', 'Encaustic', 'Fresco', 'Gouache'];
-                          } else if (category === 'handicraft') {
-                            options = ['Crochet', 'Embroidery', 'Weaving', 'Macramé', 'Pottery&Ceramics', 'Woodcrafts', 'Origami&PaperCrafts', 'Basketry', 'Quilts', 'Beadwork'];
+                          if (category === "painting") {
+                            options = ["Acrylic", "Digital", "Oil", "Watercolor", "Pastel", "Spray", "Ink-wash", "Encaustic", "Fresco", "Gouache"];
+                          } else if (category === "handicraft") {
+                            options = [
+                              "Crochet",
+                              "Embroidery",
+                              "Weaving",
+                              "Macramé",
+                              "Pottery&Ceramics",
+                              "Woodcrafts",
+                              "Origami&PaperCrafts",
+                              "Basketry",
+                              "Quilts",
+                              "Beadwork",
+                            ];
                           }
-                      
-                          options.forEach(function(option) {
-                            const opt = document.createElement('option');
+
+                          options.forEach(function (option) {
+                            const opt = document.createElement("option");
                             opt.value = option.toLowerCase();
                             opt.textContent = option;
                             subfilterSelect.appendChild(opt);
                           });
-                      
+
                           // Set the selected type
-                          const selectedTypeFirstPart = selectedType.split(' ')[0];
+                          const selectedTypeFirstPart = selectedType.split(" ")[0];
                           subfilterSelect.value = selectedTypeFirstPart.toLowerCase();
                         }
-                      
-                        document.getElementById('editProductImage').addEventListener('change', function(event) {
+
+                        document.getElementById("editProductImage").addEventListener("change", function (event) {
                           const file = event.target.files[0];
                           if (file) {
                             const reader = new FileReader();
-                            reader.onload = function(e) {
-                              document.getElementById('editProductImagePreview').src = e.target.result;
+                            reader.onload = function (e) {
+                              document.getElementById("editProductImagePreview").src = e.target.result;
                             };
                             reader.readAsDataURL(file);
                           }
                         });
-                      
-                        document.getElementById('editProductForm').addEventListener('submit', function(event) {
+
+                        document.getElementById("editProductForm").addEventListener("submit", function (event) {
                           event.preventDefault();
                           const formData = new FormData(this);
-                          const productId = document.getElementById('editProductId').value;
+                          const productId = document.getElementById("editProductId").value;
                           const productCategory = document.querySelector('input[name="editCategory"]:checked').value;
-                          const productType = document.getElementById('editProductType').value + ' ' + productCategory;
-                      
-                          formData.set('type', productType);
-                      
+                          const productType = document.getElementById("editProductType").value + " " + productCategory;
+
+                          formData.set("type", productType);
+
                           fetch(`/update_product/${productId}/`, {
-                            method: 'POST',
+                            method: "POST",
                             body: formData,
                             headers: {
-                              'X-CSRFToken': getCookie('csrftoken')
-                            }
-                          })
-                          .then(response => {
+                              "X-CSRFToken": getCookie("csrftoken"),
+                            },
+                          }).then((response) => {
                             if (response.ok) {
                               location.reload();
                             } else {
-                              alert('Failed to save changes.');
+                              alert("Failed to save changes.");
                             }
                           });
                         });
-                      
-                        document.querySelectorAll('.delete-product-btn').forEach(function(button) {
-                          button.addEventListener('click', function() {
-                            const productId = this.getAttribute('data-product-id');
-                            if (confirm('Are you sure you want to delete this product?')) {
+
+                        document.querySelectorAll(".delete-product-btn").forEach(function (button) {
+                          button.addEventListener("click", function () {
+                            const productId = this.getAttribute("data-product-id");
+                            if (confirm("Are you sure you want to delete this product?")) {
                               fetch(`/delete_product/${productId}/`, {
-                                method: 'DELETE',
+                                method: "DELETE",
                                 headers: {
-                                  'X-CSRFToken': getCookie('csrftoken')
-                                }
-                              })
-                              .then(response => {
+                                  "X-CSRFToken": getCookie("csrftoken"),
+                                },
+                              }).then((response) => {
                                 if (response.ok) {
                                   location.reload();
                                 } else {
-                                  alert('Failed to delete product.');
+                                  alert("Failed to delete product.");
                                 }
                               });
                             }
                           });
                         });
-                      
+
                         function getCookie(name) {
                           let cookieValue = null;
-                          if (document.cookie && document.cookie !== '') {
-                            const cookies = document.cookie.split(';');
+                          if (document.cookie && document.cookie !== "") {
+                            const cookies = document.cookie.split(";");
                             for (let i = 0; i < cookies.length; i++) {
                               const cookie = cookies[i].trim();
-                              if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                              if (cookie.substring(0, name.length + 1) === name + "=") {
                                 cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
                                 break;
                               }

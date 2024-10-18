@@ -206,6 +206,18 @@
                     </button>
                   </li>
                 </ul>
+
+                <script>
+                  document.addEventListener("DOMContentLoaded", function () {
+                    const tabs = document.querySelectorAll('#profileTab button[data-bs-toggle="tab"]');
+                    tabs.forEach((tab) => {
+                      tab.addEventListener("shown.bs.tab", function (event) {
+                        history.pushState(null, "", "/users/");
+                      });
+                    });
+                  });
+                </script>
+
                 <div class="tab-content pt-4" id="profileTabContent" style="height: 286px !important">
                   <div class="tab-pane fade show active" id="overview-tab-pane" role="tabpanel" aria-labelledby="overview-tab" tabindex="0">
                     <h5 class="mb-3">Profile</h5>
@@ -282,6 +294,8 @@
                       <input type="hidden" name="user_role" value="{{ user.role }}" />
                     </form>
                   </div>
+
+                  
                   <!-- Edit Address Modal -->
                   <div class="modal fade" id="editAddressModal" tabindex="-1" aria-labelledby="editAddressModalLabel" aria-hidden="true">
                     <div class="modal-dialog">
