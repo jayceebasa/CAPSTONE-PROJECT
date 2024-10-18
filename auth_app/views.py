@@ -1,50 +1,34 @@
 # views.py
-from rest_framework.views import APIView
-from .serializers import UserSerializer, TransactionSerializer
-from rest_framework.response import Response 
-from .models import User, Transaction, Product, Cart, CartItem, UserAddress
 from django.conf import settings
-from django.db.models import Q
-from django.contrib.auth.hashers import make_password
-from rest_framework.exceptions import AuthenticationFailed
-from rest_framework_simplejwt.exceptions import InvalidToken
-from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework.response import Response
-from rest_framework import status
-import jwt
-from rest_framework.permissions import IsAuthenticated
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST
-from django.contrib.auth import login as auth_login, logout as auth_logout, authenticate
-from django.shortcuts import redirect
-from rest_framework.authtoken.views import ObtainAuthToken
-from rest_framework.authtoken.models import Token
-from rest_framework.permissions import IsAuthenticated
-from django.contrib.auth.models import User
-from rest_framework import status
-from rest_framework import authentication, permissions
-from rest_framework.views import APIView
-from django.http import JsonResponse
-from .forms import ProfileImageForm
-from rest_framework.decorators import api_view
-from .serializers import ProductSerializer
-from rest_framework.decorators import permission_classes
-from rest_framework import generics
-from .models import Product
-from django.views.decorators.csrf import csrf_exempt
-from django.core.paginator import Paginator
 from django.contrib import messages
-from django.contrib.auth import update_session_auth_hash
-from django.contrib.auth import get_user_model
-import time
+from django.contrib.auth import (
+    authenticate, get_user_model, login as auth_login, logout as auth_logout, update_session_auth_hash
+)
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.hashers import make_password
+from django.core.mail import send_mail
+from django.core.paginator import Paginator
+from django.db.models import Q
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
+from django.utils.crypto import get_random_string
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework import authentication, generics, permissions, status
+from rest_framework.authtoken.models import Token
+from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 import json
 import logging
-from django.shortcuts import render, get_object_or_404
 import random
-from django.core.mail import send_mail
-from django.utils.crypto import get_random_string
-from django.template.loader import render_to_string
+
+from .forms import ProfileImageForm
+from .models import Cart, CartItem, Product, Transaction, User, UserAddress
+from .serializers import ProductSerializer, TransactionSerializer, UserSerializer
 logger = logging.getLogger(__name__)
 
 User = get_user_model()
