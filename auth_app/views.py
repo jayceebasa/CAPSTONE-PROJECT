@@ -2,7 +2,7 @@
 from rest_framework.views import APIView
 from .serializers import UserSerializer, TransactionSerializer
 from rest_framework.response import Response 
-from .models import User, Transaction, Product, Cart, CartItem
+from .models import User, Transaction, Product, Cart, CartItem, UserAddress
 from django.conf import settings
 from django.db.models import Q
 from django.contrib.auth.hashers import make_password
@@ -630,3 +630,21 @@ def save_selected_address(request):
         user.save()
         return JsonResponse({'success': True})
     return JsonResponse({'success': False, 'error': 'No address provided'})
+  
+@csrf_exempt
+@login_required
+def save_address(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        full_address = data.get('address')
+        if full_address:
+            UserAddress.objects.create(user=request.user, address=full_address)
+            return JsonResponse({'success': True})
+        return JsonResponse({'success': False, 'error': 'Invalid address'})
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+@login_required
+def get_addresses(request):
+    addresses = UserAddress.objects.filter(user=request.user).values_list('address', flat=True)
+    selected_address = request.user.address if hasattr(request.user, 'address') else ""
+    return JsonResponse({'success': True, 'addresses': list(addresses), 'selectedAddress': selected_address})
