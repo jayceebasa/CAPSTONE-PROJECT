@@ -50,3 +50,7 @@ class UserAddress(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     address = models.TextField()
     is_default = models.BooleanField(default=False)
+    
+class LoginEvent(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    timestamp = models.DateTimeField(auto_now_add=True)
