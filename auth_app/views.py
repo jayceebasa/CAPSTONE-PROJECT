@@ -74,7 +74,12 @@ class Register(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @login_required
+@login_required
 def index(request):
+    user = request.user
+    if user.is_authenticated and user.role == 'Admin':
+        return render(request, 'core/admin.html')
+    
     all_products = list(Product.objects.all())
     related_products = random.sample(all_products, min(len(all_products), 3))
     return render(request, 'core/index.html', {'all_products': all_products, 'related_products': related_products})
@@ -181,7 +186,7 @@ def login_view(request):
 
             # Check the user's role and redirect accordingly
             if user.role == 'Admin':
-                return redirect('core:admin_view')
+                return redirect('core:admin')
             elif user.role == 'Seller':
                 return redirect('core:sellers')
             else:
