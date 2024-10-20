@@ -44,4 +44,5 @@ urlpatterns = [
     path('api/sales-today/', views.sales_today, name='sales-today'),
     path('api/total-sales/', views.total_sales, name='total-sales'),
     path('api/pending-orders/', views.pending_orders, name='pending-orders'),
+    path('api/user-creation-data/', views.user_creation_data, name='user-creation-data'),
 ]

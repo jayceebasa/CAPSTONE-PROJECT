@@ -97,6 +97,12 @@
     </div>
 
     <svg xmlns="http://www.w3.org/2000/svg" class="d-none">
+      
+      <symbol id="person-circle" viewBox="0 0 16 16">
+        <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0"/>
+        <path fill-rule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1"/>
+      </symbol>
+      
       <symbol id="calendar3" viewBox="0 0 16 16">
         <path
           d="M14 0H2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2zM1 3.857C1 3.384 1.448 3 2 3h12c.552 0 1 .384 1 .857v10.286c0 .473-.448.857-1 .857H2c-.552 0-1-.384-1-.857V3.857z"></path>
@@ -161,6 +167,8 @@
         <path
           d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"></path>
       </symbol>
+      
+
     </svg>
 
     <header class="navbar sticky-top bg-dark flex-md-nowrap p-0 shadow" data-bs-theme="dark">
@@ -209,25 +217,25 @@
             <div class="offcanvas-body d-md-flex flex-column p-0 pt-lg-3 overflow-y-auto">
               <ul class="nav flex-column">
                 <li class="nav-item">
-                  <a class="nav-link d-flex align-items-center gap-2 active" aria-current="page" href="#">
+                  <a class="nav-link d-flex align-items-center gap-2" href="#" id="dashboard-link">
                     <svg class="bi"><use xlink:href="#house-fill"></use></svg>
                     Dashboard
                   </a>
                 </li>
                 <li class="nav-item">
-                  <a class="nav-link d-flex align-items-center gap-2" href="#">
+                  <a class="nav-link d-flex align-items-center gap-2" href="#" id="orders-link">
                     <svg class="bi"><use xlink:href="#file-earmark"></use></svg>
                     Orders
                   </a>
                 </li>
                 <li class="nav-item">
-                  <a class="nav-link d-flex align-items-center gap-2" href="#">
+                  <a class="nav-link d-flex align-items-center gap-2" href="#" id="products-link">
                     <svg class="bi"><use xlink:href="#cart"></use></svg>
                     Products
                   </a>
                 </li>
                 <li class="nav-item">
-                  <a class="nav-link d-flex align-items-center gap-2" href="#">
+                  <a class="nav-link d-flex align-items-center gap-2" href="#" id="sellers-link">
                     <svg class="bi"><use xlink:href="#people"></use></svg>
                     Sellers
                   </a>
@@ -239,8 +247,8 @@
               <ul class="nav flex-column mb-auto">
                 <li class="nav-item">
                   <a class="nav-link d-flex align-items-center gap-2" href="#">
-                    <svg class="bi"><use xlink:href="#gear-wide-connected"></use></svg>
-                    Settings
+                    <svg class="bi"><use xlink:href="#person-circle"></use></svg>
+                    Profile
                   </a>
                 </li>
                 <li class="nav-item">
@@ -255,34 +263,33 @@
         </div>
 
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-          <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-            <h1 class="h2">Dashboard</h1>
-            <div class="btn-toolbar mb-2 mb-md-0">
-              <div class="btn-group">
-                <button
-                  type="button"
-                  class="btn btn-sm btn-outline-secondary dropdown-toggle d-flex align-items-center gap-1"
-                  data-bs-toggle="dropdown"
-                  aria-expanded="false">
-                  <svg class="bi"><use xlink:href="#calendar3"></use></svg>
-                  <span id="dropdownMenuButton">Select</span>
-                </button>
-                <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                  <li><a class="dropdown-item" data-type="daily" onclick="updateDropdownText('Daily')">Daily</a></li>
-                  <li><a class="dropdown-item" data-type="weekly" onclick="updateDropdownText('Weekly')">Weekly</a></li>
-                </ul>
-                <script></script>
+          <div id="dashboard-view">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+              <h1 class="h2">Dashboard</h1>
+              <div class="btn-toolbar mb-2 mb-md-0">
+                <div class="btn-group">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary dropdown-toggle d-flex align-items-center gap-1"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false">
+                    <svg class="bi"><use xlink:href="#calendar3"></use></svg>
+                    <span id="dropdownMenuButton">Select</span>
+                  </button>
+                  <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                    <li><a class="dropdown-item" data-type="daily" onclick="updateDropdownText('Daily')">Daily</a></li>
+                    <li><a class="dropdown-item" data-type="weekly" onclick="updateDropdownText('Weekly')">Weekly</a></li>
+                  </ul>
+                </div>
               </div>
             </div>
-          </div>
 
-          <canvas
-            class="my-4 w-100"
-            id="myChart"
-            width="1886"
-            height="796"
-            style="display: block; box-sizing: border-box; height: 398px; width: 943px"></canvas>
-
+            <canvas
+              class="my-4 w-100"
+              id="myChart"
+              width="1886"
+              height="796"
+              style="display: block; box-sizing: border-box; height: 398px; width: 943px"></canvas>
 
             <div class="row mb-5">
               <div class="col-md-4">
@@ -310,9 +317,22 @@
                 </div>
               </div>
             </div>
+          </div>
 
+          <div id="orders-view" style="display: none">
+            <h1 class="h2">Orders</h1>
+            <p>Hello World</p>
+          </div>
 
-            
+          <div id="products-view" style="display: none">
+            <h1 class="h2">Products</h1>
+            <p>Product List</p>
+          </div>
+
+          <div id="sellers-view" style="display: none">
+            <h1 class="h2">Sellers</h1>
+            <p>Seller List</p>
+          </div>
         </main>
       </div>
     </div>

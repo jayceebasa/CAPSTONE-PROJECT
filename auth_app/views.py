@@ -683,6 +683,20 @@ def login_data(request):
     data = {login['login_date']: login['count'] for login in logins}
     return JsonResponse(data)
   
+def user_creation_data(request):
+    data_type = request.GET.get('type', 'daily')
+    today = timezone.now().date()
+    
+    if data_type == 'weekly':
+        start_date = today - timedelta(days=6)
+        users = User.objects.filter(date_joined__date__gte=start_date).extra({'creation_date': 'date(date_joined)'}).values('creation_date').annotate(count=Count('id')).order_by('creation_date')
+    else:
+        start_date = today
+        users = User.objects.filter(date_joined__date=start_date).extra({'creation_date': 'date(date_joined)'}).values('creation_date').annotate(count=Count('id')).order_by('creation_date')
+    
+    data = {user['creation_date']: user['count'] for user in users}
+    return JsonResponse(data)  
+  
 def sales_today(request):
     today = timezone.now().date()
     sales = Transaction.objects.filter(date__date=today, status='Delivered').aggregate(total_sales=Sum('amount'))

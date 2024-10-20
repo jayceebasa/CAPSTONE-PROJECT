@@ -25,7 +25,7 @@
 }
 
 .sidebar .nav-link.active {
-  color: #2470dc;
+  color: #000000;
 }
 
 .sidebar-heading {
@@ -134,3 +134,16 @@
   --bs-body-color: #fff;
 }
 
+.nav-link {
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.nav-link:hover {
+  background-color: #f8f9fa; /* Light background color on hover */
+  color: #007bff; /* Change text color on hover */
+}
+
+.nav-link.active {
+  background-color: #686a6da8; /* Active background color */
+  color: #000; /* Active text color to black */
+}
