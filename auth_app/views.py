@@ -44,6 +44,7 @@ import json
 import logging
 from django.shortcuts import render, get_object_or_404
 import random
+from rest_framework.pagination import PageNumberPagination
 from django.core.mail import send_mail
 from django.utils.crypto import get_random_string
 from django.template.loader import render_to_string
@@ -150,8 +151,7 @@ def seller_profile(request):
         'transactions': transaction_page_obj
     })
 
-def admin_view(request):
-    return render(request, 'core/admin.html')
+
 
 @login_required
 def transaction_history(request):
@@ -665,6 +665,16 @@ def get_addresses(request):
 
 #<========ADMIN VIEWS===========>
 
+def admin_view(request):
+    transactions = Transaction.objects.order_by('-date')
+    paginator = Paginator(transactions, 5)  # Show 4 transactions per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    return render(request, 'core/admin.html', {
+        'user': request.user,
+        'transactions': page_obj
+    })
+
 def login_data(request):
     data_type = request.GET.get('type', 'daily')
     today = timezone.now().date()
@@ -709,3 +719,12 @@ def total_sales(request):
 def pending_orders(request):
     pending = Transaction.objects.filter(status='processing').count()
     return JsonResponse({'pending_orders': pending})
+
+# class TransactionListAPI(APIView):
+#     def get(self, request):
+#         paginator = PageNumberPagination()
+#         paginator.page_size = 1
+#         transactions = Transaction.objects.all().order_by('-date')
+#         result_page = paginator.paginate_queryset(transactions, request)
+#         serializer = TransactionSerializer(result_page, many=True)
+#         return paginator.get_paginated_response(serializer.data)

@@ -35,11 +35,16 @@ class UserSerializer(serializers.ModelSerializer):
         return instance
       
 class TransactionSerializer(serializers.ModelSerializer):
+    product_image = serializers.SerializerMethodField()
+
     class Meta:
         model = Transaction
-        fields = ['user', 'product', 'amount', 'status', 'date']
+        fields = ['user', 'product', 'amount', 'status', 'date', 'product_image']
         read_only_fields = ['date']
-    
+
+    def get_product_image(self, obj):
+        return obj.product.image.url if obj.product.image else None
+      
     def get_seller_id(self, obj):
         return obj.product.seller.id
      

@@ -191,7 +191,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const sellersView = document.getElementById("sellers-view");
 
   function showView(view) {
-    [dashboardView, ordersView, productsView, sellersView].forEach(v => v.style.display = "none");
+    [dashboardView, ordersView, productsView, sellersView].forEach((v) => (v.style.display = "none"));
     view.style.display = "block";
   }
 
@@ -199,7 +199,7 @@ document.addEventListener("DOMContentLoaded", function () {
     { link: dashboardLink, view: dashboardView },
     { link: ordersLink, view: ordersView },
     { link: productsLink, view: productsView },
-    { link: sellersLink, view: sellersView }
+    { link: sellersLink, view: sellersView },
   ];
 
   sidebarLinks.forEach(({ link, view }) => {
@@ -213,4 +213,113 @@ document.addEventListener("DOMContentLoaded", function () {
   // Initial view
   showView(dashboardView);
   dashboardLink.classList.add("active");
+
+  // Function to format date
+  function formatDate(dateString) {
+    const options = { year: "numeric", month: "long", day: "numeric" };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  }
+
+  // Fetch and display transactions
+  async function fetchTransactions(page = 1) {
+    const response = await fetch(`/api/transactions/?page=${page}`);
+    const data = await response.json();
+    const tableBody = document.querySelector("#orders-view tbody");
+    tableBody.innerHTML = "";
+
+    data.results.forEach((transaction, index) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <th scope="row">${(page - 1) * 8 + index + 1}</th>
+        <td><img src="${transaction.product_image}" alt="Product Image" style="width: 50px; height: 50px;"></td>
+        <td>${transaction.amount}</td>
+        <td>${formatDate(transaction.date)}</td>
+        <td>${transaction.status}</td>
+      `;
+      tableBody.appendChild(row);
+    });
+
+    const pagination = document.querySelector("#orders-view .pagination");
+    pagination.innerHTML = ""; // Clear the pagination
+
+    if (data.previous) {
+      const prevPage = new URL(data.previous).searchParams.get("page");
+      const prevLi = document.createElement("li");
+      prevLi.classList.add("page-item");
+      prevLi.innerHTML = `
+      <a class="page-link" href="#" data-page="${prevPage}" aria-label="Previous">
+        <span aria-hidden="true">&laquo;</span>
+      </a>
+    `;
+      pagination.appendChild(prevLi);
+    }
+
+    for (let i = 1; i <= data.total_pages; i++) {
+      const pageLi = document.createElement("li");
+      pageLi.classList.add("page-item", i === page ? "active" : "");
+      pageLi.innerHTML = `
+      <a class="page-link" href="#" data-page="${i}">${i}</a>
+    `;
+      pagination.appendChild(pageLi);
+    }
+
+    if (data.next) {
+      const nextPage = new URL(data.next).searchParams.get("page");
+      const nextLi = document.createElement("li");
+      nextLi.classList.add("page-item");
+      nextLi.innerHTML = `
+      <a class="page-link" href="#" data-page="${nextPage}" aria-label="Next">
+        <span aria-hidden="true">&raquo;</span>
+      </a>
+    `;
+      pagination.appendChild(nextLi);
+    }
+
+    document.querySelectorAll("#orders-view .pagination a").forEach((link) => {
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        const page = event.target.getAttribute("data-page");
+        fetchTransactions(page);
+      });
+    });
+  }
+
+  // Initial fetch
+  fetchTransactions();
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+  function attachPaginationEventListeners() {
+    const paginationLinks = document.querySelectorAll(".pagination a.page-link");
+
+    paginationLinks.forEach((link) => {
+      link.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation(); // Prevent the event from bubbling up and causing a reload
+        const url = this.href;
+
+        fetch(url, {
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+          },
+        })
+          .then((response) => response.text())
+          .then((data) => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(data, "text/html");
+            const newTableBody = doc.querySelector("#transaction-table-body").innerHTML;
+            document.querySelector("#transaction-table-body").innerHTML = newTableBody;
+            const newPagination = doc.querySelector(".pagination").innerHTML;
+            document.querySelector(".pagination").innerHTML = newPagination;
+
+            // Re-attach event listeners to the new pagination links
+            attachPaginationEventListeners();
+          })
+          .catch((error) => console.error("Error:", error));
+      });
+    });
+  }
+
+  // Initial call to attach event listeners
+  attachPaginationEventListeners();
 });
