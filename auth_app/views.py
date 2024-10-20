@@ -2,9 +2,9 @@
 from rest_framework.views import APIView
 from .serializers import UserSerializer, TransactionSerializer
 from rest_framework.response import Response 
-from .models import User, Transaction, Product, Cart, CartItem, UserAddress
+from .models import User, Transaction, Product, Cart, CartItem, UserAddress, LoginEvent
 from django.conf import settings
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.contrib.auth.hashers import make_password
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.exceptions import InvalidToken
@@ -37,7 +37,9 @@ from django.core.paginator import Paginator
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth import get_user_model
-import time
+from django.utils import timezone
+from datetime import timedelta
+from django.db.models import Count
 import json
 import logging
 from django.shortcuts import render, get_object_or_404
@@ -184,6 +186,10 @@ def login_view(request):
             
             auth_login(request, user)  # Log in the user using Django's session framework
 
+
+            LoginEvent.objects.create(user=user)
+            
+            
             # Check the user's role and redirect accordingly
             if user.role == 'Admin':
                 return redirect('core:admin')
@@ -653,3 +659,39 @@ def get_addresses(request):
     addresses = UserAddress.objects.filter(user=request.user).values_list('address', flat=True)
     selected_address = request.user.address if hasattr(request.user, 'address') else ""
     return JsonResponse({'success': True, 'addresses': list(addresses), 'selectedAddress': selected_address})
+  
+  
+  
+
+#<========ADMIN VIEWS===========>
+
+def login_data(request):
+    data_type = request.GET.get('type', 'daily')
+    today = timezone.now().date()
+    
+    if data_type == 'weekly':
+        data_type = request.GET.get('type', 'daily')
+    today = timezone.now().date()
+    
+    if data_type == 'weekly':
+        start_date = today - timedelta(days=6)
+        logins = LoginEvent.objects.filter(timestamp__date__gte=start_date).extra({'login_date': 'date(timestamp)'}).values('login_date').annotate(count=Count('id')).order_by('login_date')
+    else:
+        start_date = today
+        logins = LoginEvent.objects.filter(timestamp__date=start_date).extra({'login_date': 'date(timestamp)'}).values('login_date').annotate(count=Count('id')).order_by('login_date')
+    
+    data = {login['login_date']: login['count'] for login in logins}
+    return JsonResponse(data)
+  
+def sales_today(request):
+    today = timezone.now().date()
+    sales = Transaction.objects.filter(date__date=today, status='Delivered').aggregate(total_sales=Sum('amount'))
+    return JsonResponse(sales)
+
+def total_sales(request):
+    sales = Transaction.objects.filter(status='Delivered').aggregate(total_sales=Sum('amount'))
+    return JsonResponse(sales)
+
+def pending_orders(request):
+    pending = Transaction.objects.filter(status='processing').count()
+    return JsonResponse({'pending_orders': pending})

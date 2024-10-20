@@ -63,7 +63,7 @@
                   <li><a href="{% url 'core:shop' %}">Shop</a></li>
                   <li>
                     <div class="header-icons">
-                      <a class="shopping-cart" href="cart.html"><i class="fas fa-shopping-cart"></i></a>
+                      <a class="shopping-cart" href="{% url 'core:cart_detail' %}"><i class="fas fa-shopping-cart"></i></a>
                       <a class="mobile-hide user-icon" href="{% url 'core:users' %}"><i class="fas fa-user"></i></a>
                       <a class="notification-icon" href="#"><i class="fas fa-bell"></i></a>
                       <a class="logout-button" href="{% url 'core:logout' %}">Logout</a>

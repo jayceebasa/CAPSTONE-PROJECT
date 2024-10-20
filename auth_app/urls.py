@@ -40,5 +40,8 @@ urlpatterns = [
     path('save-selected-address/', views.save_selected_address, name='save_selected_address'),
     path('save-address/', views.save_address, name='save_address'),
     path('get-addresses/', views.get_addresses, name='get_addresses'),
-   
+    path('api/login-data/', views.login_data, name='login-data'),
+    path('api/sales-today/', views.sales_today, name='sales-today'),
+    path('api/total-sales/', views.total_sales, name='total-sales'),
+    path('api/pending-orders/', views.pending_orders, name='pending-orders'),
 ]
