@@ -48,6 +48,8 @@ from rest_framework.pagination import PageNumberPagination
 from django.core.mail import send_mail
 from django.utils.crypto import get_random_string
 from django.template.loader import render_to_string
+from functools import wraps
+from django.http import HttpResponseForbidden
 logger = logging.getLogger(__name__)
 
 User = get_user_model()
@@ -665,6 +667,17 @@ def get_addresses(request):
 
 #<========ADMIN VIEWS===========>
 
+def admin_required(view_func):
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if request.user.is_authenticated and request.user.role == 'Admin':
+            return view_func(request, *args, **kwargs)
+        else:
+            return HttpResponseForbidden("You do not have permission to access this page.")
+    return _wrapped_view
+
+@login_required
+@admin_required
 def admin_view(request):
     # Fetch and paginate transactions
     transactions = Transaction.objects.order_by('-date')
