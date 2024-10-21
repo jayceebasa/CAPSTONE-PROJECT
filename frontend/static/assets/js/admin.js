@@ -1,17 +1,15 @@
 document.addEventListener("DOMContentLoaded", function () {
   const ctx = document.getElementById("myChart").getContext("2d");
-  const dropdownItems = document.querySelectorAll(".dropdown-item");
+  const dropdownItems = document.querySelectorAll("#chart-dd");
   const themeToggle = document.getElementById("bd-theme");
   const themeText = document.getElementById("bd-theme-text");
   const themeButtons = document.querySelectorAll("[data-bs-theme-value]");
   const dashboardLink = document.getElementById("dashboard-link");
   const ordersLink = document.getElementById("orders-link");
-  const productsLink = document.getElementById("products-link");
-  const sellersLink = document.getElementById("sellers-link");
+  const userManagementLink = document.getElementById("user-management-link");
   const dashboardView = document.getElementById("dashboard-view");
   const ordersView = document.getElementById("orders-view");
-  const productsView = document.getElementById("products-view");
-  const sellersView = document.getElementById("sellers-view");
+  const userManagementView = document.getElementById("user-management-view");
   let myChart;
 
   // Function to fetch data
@@ -21,6 +19,79 @@ document.addEventListener("DOMContentLoaded", function () {
     return response.json();
   }
 
+  // Function to fetch users excluding Admins
+  async function fetchUsers() {
+    return fetchData("/api/users/?exclude_role=Admin");
+  }
+
+  // Function to populate user table
+  async function populateUserTable() {
+    const users = await fetchUsers();
+    const userTableBody = document.getElementById("user-table-body");
+    userTableBody.innerHTML = ""; // Clear existing rows
+
+    users.forEach((user, index) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <th scope="row">${index + 1}</th>
+        <td>${user.username}</td>
+        <td>${user.email}</td>
+        <td>${user.first_name}</td>
+        <td>${user.last_name}</td>
+        <td>${user.role.charAt(0).toUpperCase() + user.role.slice(1)}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-secondary toggle-status-btn" data-user-id="${user.id}">
+            ${user.is_active ? "Unlocked" : "Locked"}
+          </button>
+        </td>
+      `;
+      userTableBody.appendChild(row);
+    });
+
+    // Add event listeners to the toggle status buttons
+    document.querySelectorAll(".toggle-status-btn").forEach((button) => {
+      button.addEventListener("click", async function () {
+        const userId = this.getAttribute("data-user-id");
+        const isActive = this.textContent.trim() === "Unlocked";
+        const newStatus = !isActive;
+
+        try {
+          const response = await fetch(`/api/users/${userId}/toggle-status/`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": getCookie("csrftoken"), // Assuming you have a function to get the CSRF token
+            },
+            body: JSON.stringify({ is_active: newStatus }),
+          });
+
+          if (response.ok) {
+            this.textContent = newStatus ? "Unlocked" : "Locked";
+          } else {
+            console.error("Failed to update user status");
+          }
+        } catch (error) {
+          console.error("Error:", error);
+        }
+      });
+    });
+  }
+
+  // Function to get CSRF token
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+      const cookies = document.cookie.split(";");
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === name + "=") {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
   // Function to fetch login data
   async function fetchLoginData(type) {
     return fetchData(`/api/login-data/?type=${type}`);
@@ -112,6 +183,11 @@ document.addEventListener("DOMContentLoaded", function () {
     updateChart(document.querySelector(".dropdown-item.active")?.getAttribute("data-type") || "daily"); // Update the chart colors when the theme changes
   }
 
+  // Function to update the dropdown button text
+  function updateDropdownText(text) {
+    document.getElementById("dropdownMenuButton").innerText = text;
+  }
+
   // Function to fetch and display card data
   async function fetchCardData() {
     try {
@@ -130,7 +206,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Function to show a specific view
   function showView(view) {
-    [dashboardView, ordersView, productsView, sellersView].forEach((v) => (v.style.display = "none"));
+    [dashboardView, ordersView, userManagementView].forEach((v) => (v.style.display = "none"));
     view.style.display = "block";
   }
 
@@ -139,7 +215,7 @@ document.addEventListener("DOMContentLoaded", function () {
     item.addEventListener("click", function (event) {
       const type = event.target.getAttribute("data-type");
       updateChart(type);
-      document.getElementById("dropdownMenuButton").innerText = event.target.textContent; // Update dropdown text
+      updateDropdownText(event.target.textContent); // Update dropdown text
       dropdownItems.forEach((i) => i.classList.remove("active"));
       event.target.classList.add("active");
     });
@@ -157,8 +233,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const sidebarLinks = [
     { link: dashboardLink, view: dashboardView },
     { link: ordersLink, view: ordersView },
-    { link: productsLink, view: productsView },
-    { link: sellersLink, view: sellersView },
+    { link: userManagementLink, view: userManagementView },
   ];
 
   sidebarLinks.forEach(({ link, view }) => {
@@ -179,16 +254,15 @@ document.addEventListener("DOMContentLoaded", function () {
   const savedTheme = localStorage.getItem("theme") || "auto";
   setTheme(savedTheme);
 });
+
 document.addEventListener("DOMContentLoaded", function () {
   const dashboardLink = document.getElementById("dashboard-link");
   const ordersLink = document.getElementById("orders-link");
-  const productsLink = document.getElementById("products-link");
-  const sellersLink = document.getElementById("sellers-link");
+  const userManagementLink = document.getElementById("user-management-link");
 
   const dashboardView = document.getElementById("dashboard-view");
   const ordersView = document.getElementById("orders-view");
-  const productsView = document.getElementById("products-view");
-  const sellersView = document.getElementById("sellers-view");
+  const userManagementView = document.getElementById("user-management-view");
 
   function showView(view) {
     [dashboardView, ordersView, productsView, sellersView].forEach((v) => (v.style.display = "none"));
@@ -198,8 +272,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const sidebarLinks = [
     { link: dashboardLink, view: dashboardView },
     { link: ordersLink, view: ordersView },
-    { link: productsLink, view: productsView },
-    { link: sellersLink, view: sellersView },
+    { link: userManagementLink, view: userManagementView },
   ];
 
   sidebarLinks.forEach(({ link, view }) => {

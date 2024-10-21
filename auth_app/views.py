@@ -666,13 +666,22 @@ def get_addresses(request):
 #<========ADMIN VIEWS===========>
 
 def admin_view(request):
+    # Fetch and paginate transactions
     transactions = Transaction.objects.order_by('-date')
-    paginator = Paginator(transactions, 5)  # Show 4 transactions per page
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    transaction_paginator = Paginator(transactions, 5)  # Show 5 transactions per page
+    transaction_page_number = request.GET.get('transaction_page')
+    transaction_page_obj = transaction_paginator.get_page(transaction_page_number)
+
+    # Fetch and paginate users excluding Admins
+    users = User.objects.exclude(role='Admin').order_by('username')
+    user_paginator = Paginator(users, 5)  # Show 5 users per page
+    user_page_number = request.GET.get('user_page')
+    user_page_obj = user_paginator.get_page(user_page_number)
+
     return render(request, 'core/admin.html', {
         'user': request.user,
-        'transactions': page_obj
+        'transactions': transaction_page_obj,
+        'users': user_page_obj
     })
 
 def login_data(request):
@@ -720,11 +729,8 @@ def pending_orders(request):
     pending = Transaction.objects.filter(status='processing').count()
     return JsonResponse({'pending_orders': pending})
 
-# class TransactionListAPI(APIView):
-#     def get(self, request):
-#         paginator = PageNumberPagination()
-#         paginator.page_size = 1
-#         transactions = Transaction.objects.all().order_by('-date')
-#         result_page = paginator.paginate_queryset(transactions, request)
-#         serializer = TransactionSerializer(result_page, many=True)
-#         return paginator.get_paginated_response(serializer.data)
+def toggle_user_status(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+    user.is_active = request.data.get('is_active', user.is_active)
+    user.save()
+    return Response({'status': 'success'}, status=status.HTTP_200_OK)
