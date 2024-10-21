@@ -45,5 +45,5 @@ urlpatterns = [
     path('api/total-sales/', views.total_sales, name='total-sales'),
     path('api/pending-orders/', views.pending_orders, name='pending-orders'),
     path('api/user-creation-data/', views.user_creation_data, name='user-creation-data'),
-    path('api/users/<int:user_id>/toggle-status/', views.toggle_user_status, name='toggle-user-status'),
+    path('api/toggle-user-status/<int:user_id>/', views.toggle_user_status, name='toggle_user_status'),
 ]

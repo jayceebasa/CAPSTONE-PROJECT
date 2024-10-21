@@ -687,7 +687,7 @@ def admin_view(request):
 
     # Fetch and paginate users excluding Admins
     users = User.objects.exclude(role='Admin').order_by('username')
-    user_paginator = Paginator(users, 5)  # Show 5 users per page
+    user_paginator = Paginator(users, 2)  # Show 5 users per page
     user_page_number = request.GET.get('user_page')
     user_page_obj = user_paginator.get_page(user_page_number)
 
@@ -742,8 +742,13 @@ def pending_orders(request):
     pending = Transaction.objects.filter(status='processing').count()
     return JsonResponse({'pending_orders': pending})
 
+@csrf_exempt
+@require_POST
 def toggle_user_status(request, user_id):
-    user = get_object_or_404(User, id=user_id)
-    user.is_active = request.data.get('is_active', user.is_active)
-    user.save()
-    return Response({'status': 'success'}, status=status.HTTP_200_OK)
+    try:
+        user = User.objects.get(id=user_id)
+        user.is_active = not user.is_active
+        user.save()
+        return JsonResponse({"is_active": user.is_active})
+    except User.DoesNotExist:
+        return JsonResponse({"error": "User not found"}, status=404)

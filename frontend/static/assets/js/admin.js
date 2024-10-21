@@ -19,65 +19,75 @@ document.addEventListener("DOMContentLoaded", function () {
     return response.json();
   }
 
-  // Function to fetch users excluding Admins
-  async function fetchUsers() {
-    return fetchData("/api/users/?exclude_role=Admin");
-  }
-
-  // Function to populate user table
-  async function populateUserTable() {
-    const users = await fetchUsers();
-    const userTableBody = document.getElementById("user-table-body");
-    userTableBody.innerHTML = ""; // Clear existing rows
-
-    users.forEach((user, index) => {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <th scope="row">${index + 1}</th>
-        <td>${user.username}</td>
-        <td>${user.email}</td>
-        <td>${user.first_name}</td>
-        <td>${user.last_name}</td>
-        <td>${user.role.charAt(0).toUpperCase() + user.role.slice(1)}</td>
-        <td>
-          <button class="btn btn-sm btn-outline-secondary toggle-status-btn" data-user-id="${user.id}">
-            ${user.is_active ? "Unlocked" : "Locked"}
-          </button>
-        </td>
-      `;
-      userTableBody.appendChild(row);
-    });
-
-    // Add event listeners to the toggle status buttons
-    document.querySelectorAll(".toggle-status-btn").forEach((button) => {
-      button.addEventListener("click", async function () {
-        const userId = this.getAttribute("data-user-id");
-        const isActive = this.textContent.trim() === "Unlocked";
-        const newStatus = !isActive;
-
-        try {
-          const response = await fetch(`/api/users/${userId}/toggle-status/`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-CSRFToken": getCookie("csrftoken"), // Assuming you have a function to get the CSRF token
-            },
-            body: JSON.stringify({ is_active: newStatus }),
-          });
-
-          if (response.ok) {
-            this.textContent = newStatus ? "Unlocked" : "Locked";
-          } else {
-            console.error("Failed to update user status");
-          }
-        } catch (error) {
-          console.error("Error:", error);
-        }
+  // Function to toggle user status
+  async function toggleUserStatus(userId, button) {
+    try {
+      const response = await fetch(`/api/toggle-user-status/${userId}/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCookie("csrftoken"),
+        },
       });
-    });
+
+      if (!response.ok) throw new Error("Failed to toggle user status");
+
+      const data = await response.json();
+      button.textContent = data.is_active ? "Unlocked" : "Locked";
+    } catch (error) {
+      console.error("Error toggling user status:", error);
+    }
   }
 
-  // Function to get CSRF token
+  // Attach event listeners to toggle status buttons
+  document.querySelectorAll(".toggle-status-btn").forEach((button) => {
+    button.addEventListener("click", function () {
+      const userId = this.getAttribute("data-user-id");
+      toggleUserStatus(userId, this);
+    });
+  });
+
+  // Function to handle pagination
+  function handlePagination(event) {
+    event.preventDefault();
+    const url = event.target.href;
+
+    fetch(url, {
+      headers: {
+        "X-Requested-With": "XMLHttpRequest",
+      },
+    })
+      .then((response) => response.text())
+      .then((html) => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+        const newTableBody = doc.querySelector("#user-table-body");
+        const newPagination = doc.querySelector(".pagination");
+
+        document.querySelector("#user-table-body").innerHTML = newTableBody.innerHTML;
+        document.querySelector(".pagination").innerHTML = newPagination.innerHTML;
+
+        // Reattach event listeners to new pagination links
+        document.querySelectorAll(".pagination a").forEach((link) => {
+          link.addEventListener("click", handlePagination);
+        });
+
+        // Reattach event listeners to new toggle status buttons
+        document.querySelectorAll(".toggle-status-btn").forEach((button) => {
+          button.addEventListener("click", function () {
+            const userId = this.getAttribute("data-user-id");
+            toggleUserStatus(userId, this);
+          });
+        });
+      })
+      .catch((error) => console.error("Error fetching page:", error));
+  }
+
+  // Attach event listeners to pagination links
+  document.querySelectorAll(".pagination a").forEach((link) => {
+    link.addEventListener("click", handlePagination);
+  });
+
   function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== "") {
@@ -92,6 +102,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     return cookieValue;
   }
+
   // Function to fetch login data
   async function fetchLoginData(type) {
     return fetchData(`/api/login-data/?type=${type}`);
@@ -253,39 +264,6 @@ document.addEventListener("DOMContentLoaded", function () {
   // Set the initial theme
   const savedTheme = localStorage.getItem("theme") || "auto";
   setTheme(savedTheme);
-});
-
-document.addEventListener("DOMContentLoaded", function () {
-  const dashboardLink = document.getElementById("dashboard-link");
-  const ordersLink = document.getElementById("orders-link");
-  const userManagementLink = document.getElementById("user-management-link");
-
-  const dashboardView = document.getElementById("dashboard-view");
-  const ordersView = document.getElementById("orders-view");
-  const userManagementView = document.getElementById("user-management-view");
-
-  function showView(view) {
-    [dashboardView, ordersView, productsView, sellersView].forEach((v) => (v.style.display = "none"));
-    view.style.display = "block";
-  }
-
-  const sidebarLinks = [
-    { link: dashboardLink, view: dashboardView },
-    { link: ordersLink, view: ordersView },
-    { link: userManagementLink, view: userManagementView },
-  ];
-
-  sidebarLinks.forEach(({ link, view }) => {
-    link.addEventListener("click", function () {
-      showView(view);
-      sidebarLinks.forEach(({ link }) => link.classList.remove("active"));
-      link.classList.add("active");
-    });
-  });
-
-  // Initial view
-  showView(dashboardView);
-  dashboardLink.classList.add("active");
 
   // Function to format date
   function formatDate(dateString) {
@@ -359,9 +337,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Initial fetch
   fetchTransactions();
-});
 
-document.addEventListener("DOMContentLoaded", function () {
   function attachPaginationEventListeners() {
     const paginationLinks = document.querySelectorAll(".pagination a.page-link");
 
