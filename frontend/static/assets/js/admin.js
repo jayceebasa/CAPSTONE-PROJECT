@@ -139,7 +139,7 @@ document.addEventListener("DOMContentLoaded", function () {
     item.addEventListener("click", function (event) {
       const type = event.target.getAttribute("data-type");
       updateChart(type);
-      document.getElementById("dropdownMenuButton").innerText = event.target.textContent; // Update dropdown text
+      document.getElementById("#theme-dd").innerText = event.target.textContent; // Update dropdown text
       dropdownItems.forEach((i) => i.classList.remove("active"));
       event.target.classList.add("active");
     });
