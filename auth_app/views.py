@@ -44,6 +44,8 @@ import json
 import logging
 from django.shortcuts import render, get_object_or_404
 import random
+from django.core.serializers import serialize
+from django.utils.safestring import mark_safe
 from rest_framework.pagination import PageNumberPagination
 from django.core.mail import send_mail
 from django.utils.crypto import get_random_string
@@ -682,21 +684,25 @@ def admin_view(request):
     # Fetch and paginate transactions
     transactions = Transaction.objects.order_by('-date')
     transaction_paginator = Paginator(transactions, 5)  # Show 5 transactions per page
-    transaction_page_number = request.GET.get('transaction_page')
+    transaction_page_number = request.GET.get('page')
     transaction_page_obj = transaction_paginator.get_page(transaction_page_number)
 
     # Fetch and paginate users excluding Admins
     users = User.objects.exclude(role='Admin').order_by('username')
-    user_paginator = Paginator(users, 2)  # Show 5 users per page
-    user_page_number = request.GET.get('user_page')
+    user_paginator = Paginator(users, 5)  # Show 5 users per page
+    user_page_number = request.GET.get('page')
     user_page_obj = user_paginator.get_page(user_page_number)
+
+    # Serialize user data to JSON
+    users_json = mark_safe(json.dumps(list(users.values('id', 'username', 'email', 'first_name', 'last_name', 'role', 'is_active'))))
 
     return render(request, 'core/admin.html', {
         'user': request.user,
         'transactions': transaction_page_obj,
-        'users': user_page_obj
+        'users': user_page_obj,
+        'users_json': users_json  # Pass the JSON data to the template
     })
-
+    
 def login_data(request):
     data_type = request.GET.get('type', 'daily')
     today = timezone.now().date()
