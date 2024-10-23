@@ -313,6 +313,7 @@
           <!--------------------------- END DASHBOARD ------------------------>
 
           <!-------------------- Transaction History Tab ---------------------->
+
           <div id="orders-view" style="display: none">
             <h1 class="h2">ORDER HISTORY</h1>
             <div class="table-responsive">
@@ -343,9 +344,10 @@
                 </tbody>
               </table>
             </div>
+
             <!--------------------------- Pagination Controls ------------------------>
             <nav aria-label="Page navigation">
-              <ul class="pagination justify-content-center">
+              <ul class="pagination justify-content-center" id="transaction-pagination">
                 {% if transactions.has_previous %}
                 <li class="page-item">
                   <a class="page-link" href="?page={{ transactions.previous_page_number }}" aria-label="Previous">
@@ -381,6 +383,7 @@
           <!--------------------------- END Transaction History ------------------------>
 
           <!-------------------- User Management Tab ---------------------->
+
           <div id="user-management-view" style="display: none">
             <h1 class="h2">USER MANAGEMENT</h1>
             <div class="table-responsive">
@@ -401,23 +404,23 @@
                 </tbody>
               </table>
             </div>
-            <div id="pagination-controls">
-              <button id="prevPage" class="btn btn-primary">Previous</button>
-              <button id="nextPage" class="btn btn-primary">Next</button>
+            <div id="user-pagination-controls">
+              <button id="prevUserPage" class="btn btn-primary" disabled>Previous</button>
+              <button id="nextUserPage" class="btn btn-primary">Next</button>
             </div>
           </div>
 
           <!-- Embed the user data as a JSON object -->
           <script>
-            const users = JSON.parse("{{ users_json|escapejs }}");
+            const users = JSON.parse("{{ users_json|escapejs }}") || [];
           </script>
 
           <script>
-            const itemsPerPage = 1;
-            let currentPage = 1;
+            const userItemsPerPage = 1; // User items per page
+            let currentUserPage = 1; // Current active page for users
 
             // Function to paginate users
-            function paginate(items, page, itemsPerPage) {
+            function paginateUsers(items, page, itemsPerPage) {
               const start = (page - 1) * itemsPerPage;
               const end = start + itemsPerPage;
               return items.slice(start, end);
@@ -455,9 +458,9 @@
               });
             }
 
-            // Function to render the current page
-            function renderPage(users) {
-              const paginatedUsers = paginate(users, currentPage, itemsPerPage);
+            // Function to render the current user page
+            function renderUserPage(users) {
+              const paginatedUsers = paginateUsers(users, currentUserPage, userItemsPerPage);
               const userTableBody = document.getElementById("user-table-body");
               userTableBody.innerHTML = "";
 
@@ -465,7 +468,7 @@
               paginatedUsers.forEach((user, index) => {
                 const row = `
         <tr>
-          <th scope="row">${(currentPage - 1) * itemsPerPage + index + 1}</th>
+          <th scope="row">${(currentUserPage - 1) * userItemsPerPage + index + 1}</th>
           <td>${user.username}</td>
           <td>${user.email}</td>
           <td>${user.first_name}</td>
@@ -485,44 +488,34 @@
               attachToggleStatusListeners();
 
               // Disable/Enable pagination buttons based on page state
-              const nextPageButton = document.getElementById("nextPage");
-              const prevPageButton = document.getElementById("prevPage");
+              const nextUserPageButton = document.getElementById("nextUserPage");
+              const prevUserPageButton = document.getElementById("prevUserPage");
 
               // Disable the next page button if there are no more users on the next page
-              const totalPages = Math.ceil(users.length / itemsPerPage);
-              if (currentPage >= totalPages) {
-                nextPageButton.disabled = true;
-              } else {
-                nextPageButton.disabled = false;
-              }
-
-              // Disable the previous page button if we're on the first page
-              if (currentPage === 1) {
-                prevPageButton.disabled = true;
-              } else {
-                prevPageButton.disabled = false;
-              }
+              const totalUserPages = Math.ceil(users.length / userItemsPerPage);
+              nextUserPageButton.disabled = currentUserPage >= totalUserPages;
+              prevUserPageButton.disabled = currentUserPage === 1;
             }
 
-            // Pagination buttons event listeners
-            document.getElementById("nextPage").addEventListener("click", () => {
-              const totalPages = Math.ceil(users.length / itemsPerPage);
-              if (currentPage < totalPages) {
-                currentPage++;
-                renderPage(users);
+            // Pagination buttons event listeners for users
+            document.getElementById("nextUserPage").addEventListener("click", () => {
+              const totalUserPages = Math.ceil(users.length / userItemsPerPage);
+              if (currentUserPage < totalUserPages) {
+                currentUserPage++;
+                renderUserPage(users);
               }
             });
 
-            document.getElementById("prevPage").addEventListener("click", () => {
-              if (currentPage > 1) {
-                currentPage--;
-                renderPage(users);
+            document.getElementById("prevUserPage").addEventListener("click", () => {
+              if (currentUserPage > 1) {
+                currentUserPage--;
+                renderUserPage(users);
               }
             });
 
             // Initial render on page load
             document.addEventListener("DOMContentLoaded", () => {
-              renderPage(users);
+              renderUserPage(users);
             });
 
             // CSRF token helper function
@@ -541,7 +534,6 @@
               return cookieValue;
             }
           </script>
-
           <!--------------------------- END User Management ------------------------>
         </main>
       </div>
