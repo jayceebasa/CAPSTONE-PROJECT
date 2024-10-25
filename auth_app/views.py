@@ -12,6 +12,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.response import Response
 from rest_framework import status
 import jwt
+from django.db.models import Max
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
@@ -33,7 +34,7 @@ from rest_framework.decorators import permission_classes
 from rest_framework import generics
 from .models import Product
 from django.views.decorators.csrf import csrf_exempt
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth import get_user_model
@@ -95,9 +96,29 @@ def index(request):
 
 @login_required
 def shop_view(request):
-    products = Product.objects.all()
+    products_list = Product.objects.all()
     product_types = Product.objects.values_list('type', flat=True).distinct()
-    return render(request, 'core/shop.html', {'products': products, 'product_types': product_types})
+    
+    # Pagination
+    paginator = Paginator(products_list, 12)  # Show 9 products per page
+    page_number = request.GET.get('page')
+    
+    try:
+        products = paginator.page(page_number)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page.
+        products = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), deliver last page of results.
+        products = paginator.page(paginator.num_pages)
+    
+    max_price = products_list.aggregate(Max('price'))['price__max']
+    
+    return render(request, 'core/shop.html', {
+        'products': products,
+        'product_types': product_types,
+        'max_price': max_price,
+    })
   
 @login_required
 def user_profile(request):
