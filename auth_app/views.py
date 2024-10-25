@@ -1,29 +1,4 @@
 # views.py
-<<<<<<< HEAD
-from django.conf import settings
-from django.contrib import messages
-from django.contrib.auth import (
-    authenticate, get_user_model, login as auth_login, logout as auth_logout, update_session_auth_hash
-)
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.hashers import make_password
-from django.core.mail import send_mail
-from django.core.paginator import Paginator
-from django.db.models import Q
-from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, redirect, render
-from django.template.loader import render_to_string
-from django.utils.crypto import get_random_string
-from django.views.decorators.csrf import csrf_exempt
-from rest_framework import authentication, generics, permissions, status
-from rest_framework.authtoken.models import Token
-from rest_framework.authtoken.views import ObtainAuthToken
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.views import APIView
-
-=======
 from rest_framework.views import APIView
 from .serializers import UserSerializer, TransactionSerializer
 from rest_framework.response import Response 
@@ -65,14 +40,18 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from datetime import timedelta
 from django.db.models import Count
->>>>>>> testing
 import json
 import logging
+from django.shortcuts import render, get_object_or_404
 import random
-
-from .forms import ProfileImageForm
-from .models import Cart, CartItem, Product, Transaction, User, UserAddress
-from .serializers import ProductSerializer, TransactionSerializer, UserSerializer
+from django.core.serializers import serialize
+from django.utils.safestring import mark_safe
+from rest_framework.pagination import PageNumberPagination
+from django.core.mail import send_mail
+from django.utils.crypto import get_random_string
+from django.template.loader import render_to_string
+from functools import wraps
+from django.http import HttpResponseForbidden
 logger = logging.getLogger(__name__)
 
 User = get_user_model()
@@ -176,8 +155,7 @@ def seller_profile(request):
         'transactions': transaction_page_obj
     })
 
-def admin_view(request):
-    return render(request, 'core/admin.html')
+
 
 @login_required
 def transaction_history(request):
@@ -691,6 +669,40 @@ def get_addresses(request):
 
 #<========ADMIN VIEWS===========>
 
+def admin_required(view_func):
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if request.user.is_authenticated and request.user.role == 'Admin':
+            return view_func(request, *args, **kwargs)
+        else:
+            return HttpResponseForbidden("You do not have permission to access this page.")
+    return _wrapped_view
+
+@login_required
+@admin_required
+def admin_view(request):
+    # Fetch and paginate transactions
+    transactions = Transaction.objects.order_by('-date')
+    transaction_paginator = Paginator(transactions, 5)  # Show 5 transactions per page
+    transaction_page_number = request.GET.get('page')
+    transaction_page_obj = transaction_paginator.get_page(transaction_page_number)
+
+    # Fetch and paginate users excluding Admins
+    users = User.objects.exclude(role='Admin').order_by('username')
+    user_paginator = Paginator(users, 5)  # Show 5 users per page
+    user_page_number = request.GET.get('page')
+    user_page_obj = user_paginator.get_page(user_page_number)
+
+    # Serialize user data to JSON
+    users_json = mark_safe(json.dumps(list(users.values('id', 'username', 'email', 'first_name', 'last_name', 'role', 'is_active'))))
+
+    return render(request, 'core/admin.html', {
+        'user': request.user,
+        'transactions': transaction_page_obj,
+        'users': user_page_obj,
+        'users_json': users_json  # Pass the JSON data to the template
+    })
+    
 def login_data(request):
     data_type = request.GET.get('type', 'daily')
     today = timezone.now().date()
@@ -709,6 +721,20 @@ def login_data(request):
     data = {login['login_date']: login['count'] for login in logins}
     return JsonResponse(data)
   
+def user_creation_data(request):
+    data_type = request.GET.get('type', 'daily')
+    today = timezone.now().date()
+    
+    if data_type == 'weekly':
+        start_date = today - timedelta(days=6)
+        users = User.objects.filter(date_joined__date__gte=start_date).extra({'creation_date': 'date(date_joined)'}).values('creation_date').annotate(count=Count('id')).order_by('creation_date')
+    else:
+        start_date = today
+        users = User.objects.filter(date_joined__date=start_date).extra({'creation_date': 'date(date_joined)'}).values('creation_date').annotate(count=Count('id')).order_by('creation_date')
+    
+    data = {user['creation_date']: user['count'] for user in users}
+    return JsonResponse(data)  
+  
 def sales_today(request):
     today = timezone.now().date()
     sales = Transaction.objects.filter(date__date=today, status='Delivered').aggregate(total_sales=Sum('amount'))
@@ -721,3 +747,14 @@ def total_sales(request):
 def pending_orders(request):
     pending = Transaction.objects.filter(status='processing').count()
     return JsonResponse({'pending_orders': pending})
+
+@csrf_exempt
+@require_POST
+def toggle_user_status(request, user_id):
+    try:
+        user = User.objects.get(id=user_id)
+        user.is_active = not user.is_active
+        user.save()
+        return JsonResponse({"is_active": user.is_active})
+    except User.DoesNotExist:
+        return JsonResponse({"error": "User not found"}, status=404)
