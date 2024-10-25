@@ -211,7 +211,7 @@
               <h5 class="offcanvas-title" id="sidebarMenuLabel">ASTIG</h5>
               <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" aria-label="Close"></button>
             </div>
-            <div class="offcanvas-body d-md-flex flex-column p-0 pt-lg-3 overflow-y-auto" style="height:100vh !important;">
+            <div class="offcanvas-body d-md-flex flex-column p-0 pt-lg-3 overflow-y-auto" style="height: 100vh !important">
               <ul class="nav flex-column">
                 <li class="nav-item">
                   <a class="nav-link d-flex align-items-center gap-2" href="#" id="dashboard-link">
@@ -238,7 +238,7 @@
 
               <ul class="nav flex-column mb-auto">
                 <li class="nav-item">
-                  <a class="nav-link d-flex align-items-center gap-2" href="#">
+                  <a class="nav-link d-flex align-items-center gap-2" href="#" id="profile-link">
                     <svg class="bi"><use xlink:href="#person-circle"></use></svg>
                     Profile
                   </a>
@@ -433,7 +433,7 @@
           </script>
 
           <script>
-            const userItemsPerPage = 1; // User items per page
+            const userItemsPerPage = 5; // User items per page
             let currentUserPage = 1; // Current active page for users
 
             // Function to paginate users
@@ -552,6 +552,77 @@
             }
           </script>
           <!--------------------------- END User Management ------------------------>
+
+          <!-------------------- Profile Tab ---------------------->
+
+          <div id="profile-view">
+            <h1 class="h2">PROFILE</h1>
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">User Profile</h5>
+                <p class="card-text"><strong>Username:</strong> {{ user.username }}</p>
+                <p class="card-text"><strong>Role:</strong> {{ user.role }}</p>
+              </div>
+            </div>
+
+            <!-- Change Password Section -->
+            <div class="card mt-4">
+              <div class="card-body">
+                <h5 class="card-title">Change Password</h5>
+
+                <!-- Password Change Form -->
+                <form id="change-password-form" method="post">
+                  {% csrf_token %}
+                  <div class="mb-3">
+                    <label for="id_old_password">Old password:</label>
+                    <input type="password" name="old_password" id="id_old_password" class="form-control" required />
+                  </div>
+                  <div class="mb-3">
+                    <label for="id_new_password1">New password:</label>
+                    <input type="password" name="new_password1" id="id_new_password1" class="form-control" required />
+                  </div>
+                  <div class="mb-3">
+                    <label for="id_new_password2">Confirm new password:</label>
+                    <input type="password" name="new_password2" id="id_new_password2" class="form-control" required />
+                  </div>
+                  <button type="submit" class="btn btn-primary">Change Password</button>
+                </form>
+
+                <!-- Message Container for Success/Error Messages -->
+                <div id="message-container" class="d-none mt-3"></div>
+              </div>
+            </div>
+          </div>
+          <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+          <script>
+            $(document).ready(function () {
+              // Handle form submission with AJAX
+              $("#change-password-form").on("submit", function (event) {
+                event.preventDefault();
+                var formData = $(this).serialize();
+
+                $.ajax({
+                  url: "{% url 'core:change_admin_password' %}",
+                  method: "POST",
+                  data: formData,
+                  success: function (response) {
+                    if (response.redirect) {
+                      location.reload(); // Reloads the page with a GET request
+                    } else {
+                      // Show success message
+                      $("#message-container").removeClass("d-none alert-danger").addClass("alert alert-success").text(response.message);
+                      $("#change-password-form")[0].reset();
+                    }
+                  },
+                  error: function (xhr) {
+                    // Display error message
+                    var response = JSON.parse(xhr.responseText);
+                    $("#message-container").removeClass("d-none alert-success").addClass("alert alert-danger").text(response.message);
+                  },
+                });
+              });
+            });
+          </script>
         </main>
       </div>
     </div>

@@ -7,9 +7,11 @@ document.addEventListener("DOMContentLoaded", function () {
   const dashboardLink = document.getElementById("dashboard-link");
   const ordersLink = document.getElementById("orders-link");
   const userManagementLink = document.getElementById("user-management-link");
+  const profileLink = document.getElementById("profile-link");
   const dashboardView = document.getElementById("dashboard-view");
   const ordersView = document.getElementById("orders-view");
   const userManagementView = document.getElementById("user-management-view");
+  const profileView = document.getElementById("profile-view");
   let myChart;
 
   // Function to fetch data
@@ -217,7 +219,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Function to show a specific view
   function showView(view) {
-    [dashboardView, ordersView, userManagementView].forEach((v) => (v.style.display = "none"));
+    [dashboardView, ordersView, userManagementView, profileView].forEach((v) => (v.style.display = "none"));
     view.style.display = "block";
   }
 
@@ -245,6 +247,7 @@ document.addEventListener("DOMContentLoaded", function () {
     { link: dashboardLink, view: dashboardView },
     { link: ordersLink, view: ordersView },
     { link: userManagementLink, view: userManagementView },
+    { link: profileLink, view: profileView },
   ];
 
   sidebarLinks.forEach(({ link, view }) => {
@@ -368,6 +371,7 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     });
   }
+
 
   // Initial call to attach event listeners
   attachPaginationEventListeners();

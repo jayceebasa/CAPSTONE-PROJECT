@@ -44,6 +44,7 @@ import json
 import logging
 from django.shortcuts import render, get_object_or_404
 import random
+from django.contrib.auth.hashers import check_password
 from django.core.serializers import serialize
 from django.utils.safestring import mark_safe
 from rest_framework.pagination import PageNumberPagination
@@ -51,6 +52,7 @@ from django.core.mail import send_mail
 from django.utils.crypto import get_random_string
 from django.template.loader import render_to_string
 from functools import wraps
+from django.contrib.auth.forms import PasswordChangeForm
 from django.http import HttpResponseForbidden
 logger = logging.getLogger(__name__)
 
@@ -759,3 +761,32 @@ def toggle_user_status(request, user_id):
     except User.DoesNotExist:
         return JsonResponse({"error": "User not found"}, status=404)
 
+@csrf_exempt
+def change_admin_password(request):
+    if request.method == "POST":
+        old_password = request.POST.get("old_password")
+        new_password1 = request.POST.get("new_password1")
+        new_password2 = request.POST.get("new_password2")
+
+        user = request.user
+
+        # Check if old password is correct
+        if not check_password(old_password, user.password):
+            return JsonResponse({"status": "error", "message": "Old password is incorrect."}, status=400)
+
+        # Check if new passwords match
+        if new_password1 != new_password2:
+            return JsonResponse({"status": "error", "message": "New passwords do not match."}, status=400)
+
+        # Check if new password is valid
+        if len(new_password1) < 8:
+            return JsonResponse({"status": "error", "message": "New password must be at least 8 characters."}, status=400)
+
+        # Update password and keep user logged in
+        user.set_password(new_password1)
+        user.save()
+        update_session_auth_hash(request, user)  # Keeps the user logged in after password change
+
+        return JsonResponse({"status": "success", "message": "Password updated successfully."}, status=200)
+
+    return JsonResponse({"status": "error", "message": "Invalid request method.", "redirect": True}, status=405)
