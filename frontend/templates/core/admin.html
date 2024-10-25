@@ -211,7 +211,7 @@
               <h5 class="offcanvas-title" id="sidebarMenuLabel">ASTIG</h5>
               <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" aria-label="Close"></button>
             </div>
-            <div class="offcanvas-body d-md-flex flex-column p-0 pt-lg-3 overflow-y-auto">
+            <div class="offcanvas-body d-md-flex flex-column p-0 pt-lg-3 overflow-y-auto" style="height:100vh !important;">
               <ul class="nav flex-column">
                 <li class="nav-item">
                   <a class="nav-link d-flex align-items-center gap-2" href="#" id="dashboard-link">
@@ -353,7 +353,7 @@
           </div>
 
           <script>
-            const transactionItemsPerPage = 3; // Number of items per page
+            const transactionItemsPerPage = 5; // Number of items per page
             let currentTransactionPage = 1; // Track the current page
 
             // Function to render only the items for the current page
@@ -433,7 +433,7 @@
           </script>
 
           <script>
-            const userItemsPerPage = 1; // User items per page
+            const userItemsPerPage = 5; // User items per page
             let currentUserPage = 1; // Current active page for users
 
             // Function to paginate users
