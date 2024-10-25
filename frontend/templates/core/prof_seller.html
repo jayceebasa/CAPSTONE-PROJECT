@@ -39,13 +39,13 @@
   </head>
   <body>
     <!-- header -->
-    <div class="top-header-area" style="background-color: #051922; margin-top: -20px; padding-bottom: 15px !important;">
+    <div class="top-header-area" style="background-color: #051922; margin-top: -20px; padding-bottom: 15px !important">
       <div class="container">
         <div class="row">
           <div class="col-lg-12 col-sm-12 text-center">
             <div class="main-menu-wrap">
               <!-- logo -->
-              <div class="site-logo" style="padding-top: 15px;">
+              <div class="site-logo" style="padding-top: 15px">
                 <a href="{% url 'core:home' %}">
                   <img src="{% static 'assets/img/astig.png' %}" alt="" style="max-width: 60%" />
                 </a>
@@ -54,7 +54,7 @@
 
               <!-- menu start -->
               <nav class="main-menu">
-                <ul style="margin-top: 15px;">
+                <ul style="margin-top: 15px">
                   <li class="">
                     <a href="{% url 'core:home' %}">Home</a>
                   </li>
@@ -353,12 +353,12 @@
                     const PSGC_API_BASE_URL = "https://psgc.gitlab.io/api";
                     let addresses = [];
                     let selectedAddress = "";
-
+                            
                     document.addEventListener("DOMContentLoaded", async function () {
                       await fetchAddresses();
                       displayAddressCards();
                     });
-
+                  
                     document.getElementById("addAddressButton").addEventListener("click", function () {
                       // Clear the form fields
                       document.getElementById("regionSelect").innerHTML = '<option value="">Select Region</option>';
@@ -366,26 +366,26 @@
                       document.getElementById("citySelect").innerHTML = '<option value="">Select City/Municipality</option>';
                       document.getElementById("barangaySelect").innerHTML = '<option value="">Select Barangay</option>';
                       document.getElementById("exactAddress").value = "";
-
+                  
                       // Populate the regions dropdown
                       populateRegions();
                     });
-
+                  
                     document.getElementById("regionSelect").addEventListener("change", async function () {
                       const regionCode = this.value;
                       await populateProvinces(regionCode);
                     });
-
+                  
                     document.getElementById("provinceSelect").addEventListener("change", async function () {
                       const provinceCode = this.value;
                       await populateCitiesOrMunicipalities(provinceCode, "province");
                     });
-
+                  
                     document.getElementById("citySelect").addEventListener("change", async function () {
                       const cityMunicipalityCode = this.value;
                       await populateBarangays(cityMunicipalityCode);
                     });
-
+                  
                     document.getElementById("saveAddressButton").addEventListener("click", async function () {
                       const region = document.getElementById("regionSelect").selectedOptions[0].text;
                       const province = document.getElementById("provinceSelect").selectedOptions[0].text;
@@ -393,7 +393,7 @@
                       const barangay = document.getElementById("barangaySelect").selectedOptions[0].text;
                       const exactAddress = document.getElementById("exactAddress").value;
                       const fullAddress = `${exactAddress}, ${barangay}, ${city}, ${province}, ${region}`;
-
+                  
                       try {
                         const response = await fetch("/save-address/", {
                           method: "POST",
@@ -403,7 +403,7 @@
                           },
                           body: JSON.stringify({ address: fullAddress }),
                         });
-
+                  
                         const result = await response.json();
                         if (result.success) {
                           await fetchAddresses();
@@ -417,12 +417,12 @@
                         console.error("Error saving address:", error);
                       }
                     });
-
+                  
                     document.getElementById("saveSelectedAddressButton").addEventListener("click", async function () {
                       const selectedAddress = document.querySelector('input[name="defaultAddress"]:checked').value;
                       await saveSelectedAddress(selectedAddress);
                     });
-
+                  
                     async function fetchAddresses() {
                       try {
                         const response = await fetch("/get-addresses/");
@@ -437,7 +437,7 @@
                         console.error("Error fetching addresses:", error);
                       }
                     }
-
+                  
                     function displayAddressCards() {
                       const container = document.getElementById("addressCardsContainer");
                       container.innerHTML = "";
@@ -462,7 +462,7 @@
                         container.appendChild(addressCard);
                       });
                     }
-
+                  
                     async function saveSelectedAddress(address) {
                       try {
                         const response = await fetch("/save-selected-address/", {
@@ -473,7 +473,7 @@
                           },
                           body: new URLSearchParams({ address: address }),
                         });
-
+                  
                         const result = await response.json();
                         if (result.success) {
                           window.location.reload(); // Refresh the page after saving the address
@@ -484,7 +484,7 @@
                         console.error("Error saving selected address:", error);
                       }
                     }
-
+                  
                     function getCookie(name) {
                       let cookieValue = null;
                       if (document.cookie && document.cookie !== "") {
@@ -499,7 +499,7 @@
                       }
                       return cookieValue;
                     }
-
+                  
                     async function populateRegions(selectedRegion = "") {
                       try {
                         const response = await fetch(`${PSGC_API_BASE_URL}/regions/`);
@@ -526,12 +526,19 @@
                         console.error("Error fetching regions:", error);
                       }
                     }
-
+                  
                     async function populateProvinces(regionCode, selectedProvince = "") {
                       try {
+                        const provinceSelect = document.getElementById("provinceSelect");
+                        if (regionCode === "130000000") { // NCR
+                          provinceSelect.innerHTML = '<option value="000000000">No Province</option>';
+                          provinceSelect.disabled = true;
+                          await populateCitiesOrMunicipalities(regionCode, "region");
+                          return;
+                        }
+                        provinceSelect.disabled = false;
                         const response = await fetch(`${PSGC_API_BASE_URL}/regions/${regionCode}/provinces/`);
                         const provinces = await response.json();
-                        const provinceSelect = document.getElementById("provinceSelect");
                         provinceSelect.innerHTML = '<option value="">Select Province</option>';
                         provinces.forEach((province) => {
                           const option = document.createElement("option");
@@ -553,7 +560,7 @@
                         console.error("Error fetching provinces:", error);
                       }
                     }
-
+                  
                     async function populateCitiesOrMunicipalities(code, type, selectedCity = "") {
                       try {
                         const endpoint =
@@ -584,7 +591,7 @@
                         console.error("Error fetching cities or municipalities:", error);
                       }
                     }
-
+                  
                     async function populateBarangays(cityMunicipalityCode, selectedBarangay = "") {
                       try {
                         const response = await fetch(`${PSGC_API_BASE_URL}/cities-municipalities/${cityMunicipalityCode}/barangays/`);
