@@ -790,3 +790,19 @@ def change_admin_password(request):
         return JsonResponse({"status": "success", "message": "Password updated successfully."}, status=200)
 
     return JsonResponse({"status": "error", "message": "Invalid request method.", "redirect": True}, status=405)
+  
+
+@csrf_exempt
+@login_required
+def delete_address(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            address = data.get('address')
+            if address:
+                UserAddress.objects.filter(user=request.user, address=address).delete()
+                return JsonResponse({'success': True})
+            return JsonResponse({'success': False, 'error': 'Invalid address'})
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Invalid JSON'})
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})

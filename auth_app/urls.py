@@ -47,4 +47,5 @@ urlpatterns = [
     path('api/user-creation-data/', views.user_creation_data, name='user-creation-data'),
     path('api/toggle-user-status/<int:user_id>/', views.toggle_user_status, name='toggle_user_status'),
     path('change-admin-passowrd', views.change_admin_password, name='change_admin_password'),
+    path('delete-address/', views.delete_address, name='delete_address'),
 ]
