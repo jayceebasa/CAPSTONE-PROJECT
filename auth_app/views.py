@@ -698,7 +698,7 @@ def admin_view(request):
 
     return render(request, 'core/admin.html', {
         'user': request.user,
-        'transactions': transaction_page_obj,
+        'transactions': transactions,
         'users': user_page_obj,
         'users_json': users_json  # Pass the JSON data to the template
     })
@@ -758,3 +758,4 @@ def toggle_user_status(request, user_id):
         return JsonResponse({"is_active": user.is_active})
     except User.DoesNotExist:
         return JsonResponse({"error": "User not found"}, status=404)
+
