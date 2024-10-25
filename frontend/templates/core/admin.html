@@ -347,7 +347,7 @@
 
             <!--------------------------- Pagination Controls ------------------------>
             <div id="transaction-pagination-controls" class="pagination-controls">
-              <button id="prevTransactionPage" class="btn btn-prim ary">Previous</button>
+              <button id="prevTransactionPage" class="btn btn-primary" disabled>Previous</button>
               <button id="nextTransactionPage" class="btn btn-primary">Next</button>
             </div>
           </div>
@@ -421,7 +421,7 @@
                 </tbody>
               </table>
             </div>
-            <div id="user-pagination-controls">
+            <div id="user-pagination-controls" class="pagination-controls">
               <button id="prevUserPage" class="btn btn-primary" disabled>Previous</button>
               <button id="nextUserPage" class="btn btn-primary">Next</button>
             </div>
@@ -484,19 +484,19 @@
               // Render the current page of users
               paginatedUsers.forEach((user, index) => {
                 const row = `
-        <tr>
-          <th scope="row">${(currentUserPage - 1) * userItemsPerPage + index + 1}</th>
-          <td>${user.username}</td>
-          <td>${user.email}</td>
-          <td>${user.first_name}</td>
-          <td>${user.last_name}</td>
-          <td>${user.role.charAt(0).toUpperCase() + user.role.slice(1)}</td>
-          <td>
-            <button class="btn btn-sm btn-outline-secondary toggle-status-btn" data-user-id="${user.id}">
-              ${user.is_active ? "Unlocked" : "Locked"}
-            </button>
-          </td>
-        </tr>
+      <tr>
+        <th scope="row">${(currentUserPage - 1) * userItemsPerPage + index + 1}</th>
+        <td>${user.username}</td>
+        <td>${user.email}</td>
+        <td>${user.first_name}</td>
+        <td>${user.last_name}</td>
+        <td>${user.role.charAt(0).toUpperCase() + user.role.slice(1)}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-secondary toggle-status-btn" data-user-id="${user.id}">
+            ${user.is_active ? "Unlocked" : "Locked"}
+          </button>
+        </td>
+      </tr>
       `;
                 userTableBody.insertAdjacentHTML("beforeend", row);
               });
