@@ -440,6 +440,7 @@
                               <label class="form-check-label" for="address${index}">
                                 ${address}
                               </label>
+                              <button type="button" class="btn btn-danger btn-sm float-end delete-address-button" data-address="${address}">Delete</button>
                             </div>
                           </div>
                         `;
@@ -448,6 +449,37 @@
                         });
                         container.appendChild(addressCard);
                       });
+
+                      // Add event listeners to delete buttons
+                      document.querySelectorAll(".delete-address-button").forEach((button) => {
+                        button.addEventListener("click", async function () {
+                          const addressToDelete = this.getAttribute("data-address");
+                          await deleteAddress(addressToDelete);
+                        });
+                      });
+                    }
+
+                    async function deleteAddress(address) {
+                      try {
+                        const response = await fetch("/delete-address/", {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRFToken": getCookie("csrftoken"),
+                          },
+                          body: JSON.stringify({ address: address }),
+                        });
+
+                        const result = await response.json();
+                        if (result.success) {
+                          await fetchAddresses();
+                          displayAddressCards();
+                        } else {
+                          console.error("Error deleting address:", result.error);
+                        }
+                      } catch (error) {
+                        console.error("Error deleting address:", error);
+                      }
                     }
 
                     async function saveSelectedAddress(address) {
@@ -516,9 +548,17 @@
 
                     async function populateProvinces(regionCode, selectedProvince = "") {
                       try {
+                        const provinceSelect = document.getElementById("provinceSelect");
+                        if (regionCode === "130000000") {
+                          // NCR
+                          provinceSelect.innerHTML = '<option value="000000000">No Province</option>';
+                          provinceSelect.disabled = true;
+                          await populateCitiesOrMunicipalities(regionCode, "region");
+                          return;
+                        }
+                        provinceSelect.disabled = false;
                         const response = await fetch(`${PSGC_API_BASE_URL}/regions/${regionCode}/provinces/`);
                         const provinces = await response.json();
-                        const provinceSelect = document.getElementById("provinceSelect");
                         provinceSelect.innerHTML = '<option value="">Select Province</option>';
                         provinces.forEach((province) => {
                           const option = document.createElement("option");
