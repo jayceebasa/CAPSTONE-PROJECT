@@ -161,6 +161,25 @@
       updateURL();
     });
 
+    // Function to check if there are products on the initial load
+    function checkInitialProducts() {
+      if ($("#product-list").children().length === 0) {
+        $("#loading").text("No products available.");
+        $(window).off("scroll");
+      } else {
+        $(window).on("scroll", function () {
+          const scrollPosition = $(window).scrollTop() + $(window).height();
+          const contentHeight = $(document).height();
+
+          if (scrollPosition >= contentHeight - 200 && !isLoading) {
+            // Trigger load before reaching the bottom
+            isLoading = true;
+            loadMoreProducts();
+          }
+        });
+      }
+    }
+
     function filterProducts() {
       let subFilter = $("#subFilter").val();
       let filterValue = currentFilter;
@@ -180,6 +199,8 @@
         },
       });
     }
+
+   
 
     function updateURL() {
       let subFilter = $("#subFilter").val();
@@ -211,6 +232,7 @@
         url: `{% url 'core:shop_pagination' %}?page=${++currentPage}&filter=${currentFilter}&minPrice=${minPrice}&maxPrice=${maxPrice}`,
         method: "GET",
         success: function (data) {
+          console.log(data); // Log the response data for debugging
           if (data.trim() === "") {
             // Stop if no more products
             $(window).off("scroll");
@@ -218,10 +240,31 @@
             return;
           }
 
-          $("#product-list").append(data);
+          // Convert the response data to a jQuery object for easier manipulation
+          const newProducts = $(data).find(".product-item");
+          const existingIds = $("#product-list .product-item")
+            .map(function () {
+              return $(this).data("product-id");
+            })
+            .get();
+
+          // Filter out any duplicate products
+          const filteredNewProducts = newProducts.filter(function () {
+            return !existingIds.includes($(this).data("product-id"));
+          });
+
+          console.log("Filtered New Products: ", filteredNewProducts); // Log filtered new products for debugging
+
+          if (filteredNewProducts.length > 0) {
+            $("#product-list").append(filteredNewProducts); // Append only new products
+          } else {
+            // If no new products, stop infinite scroll
+            $(window).off("scroll");
+            $("#loading").text("No more new products to load.");
+          }
+
           isLoading = false;
-          $("#loading").hide();
-          filterProducts(); // Reapply filters to new products
+          $("#loading").hide(); // Hide loading after processing
         },
         error: function () {
           $("#loading").text("An error occurred. Try again later.");
@@ -234,7 +277,6 @@
     $(".add-to-cart").on("click", function (e) {
       e.preventDefault();
       const productId = $(this).data("product-id");
-
 
       $.ajax({
         url: `/add-to-cart/${productId}/`,
