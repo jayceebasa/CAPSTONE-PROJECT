@@ -104,7 +104,7 @@
   $(document).ready(function () {
     const subFilters = {
       painting: [
-        { value: "painting", text: "All" },
+        { value: "painting", text: "All", selected: true },
         { value: "oil", text: "Oil Paintings" },
         { value: "watercolor", text: "Watercolor Paintings" },
         { value: "acrylic", text: "Acrylic Paintings" },
@@ -117,7 +117,7 @@
         { value: "gouache", text: "Gouache Paintings" },
       ],
       handicraft: [
-        { value: "handicraft", text: "All" },
+        { value: "handicraft", text: "All", selected: true },
         { value: "crochet", text: "Crochet" },
         { value: "embroidery", text: "Embroidery" },
         { value: "weaving", text: "Weaving" },
@@ -131,14 +131,41 @@
       ],
     };
 
-    let currentFilter = "*";
+    let currentFilter = ".painting"; // Set default filter to Paintings
     let minPrice = 0;
     let maxPrice = 1000000;
     let currentPage = 1; // Start with the first page
     let isLoading = false;
 
+    // Set default URL parameters to Paintings category
+    const url = new URL(window.location.href);
+    url.searchParams.set("filter", ".painting");
+    url.searchParams.set("subfilter", "painting");
+    url.searchParams.set("minPrice", "0");
+    url.searchParams.set("maxPrice", "1000000");
+    window.history.replaceState({}, "", url);
+
+    // Update filters based on URL parameters
+    currentFilter = url.searchParams.get("filter") || ".painting";
+    const subFilter = url.searchParams.get("subfilter") || "painting";
+    minPrice = parseFloat(url.searchParams.get("minPrice")) || 0;
+    maxPrice = parseFloat(url.searchParams.get("maxPrice")) || 1000000;
+
+    $("#mainFilter").val(currentFilter);
+    if (currentFilter !== "*") {
+      $("#subFilter").empty().show();
+      $("#subFilterLabel").show();
+      subFilters[currentFilter.substring(1)].forEach((subFilter) => {
+        $("#subFilter").append(new Option(subFilter.text, subFilter.value));
+      });
+      $("#subFilter").val(subFilter);
+    }
+
+    $("#priceFilter").val(`${minPrice}-${maxPrice}`);
+
     $("#mainFilter").on("change", function () {
       currentFilter = $(this).val();
+      currentPage = 1;
 
       if (currentFilter === "*") {
         $("#subFilter").hide().empty();
@@ -157,6 +184,7 @@
     });
 
     $("#subFilter, #priceFilter").on("change", function () {
+      currentPage = 1;
       filterProducts();
       updateURL();
     });
@@ -200,8 +228,6 @@
       });
     }
 
-   
-
     function updateURL() {
       let subFilter = $("#subFilter").val();
       let filterValue = currentFilter.substring(1);
@@ -210,6 +236,7 @@
       url.searchParams.set("subfilter", subFilter);
       url.searchParams.set("minPrice", minPrice);
       url.searchParams.set("maxPrice", maxPrice);
+      url.searchParams.set("page", currentPage);
       window.history.pushState({}, "", url);
     }
 

@@ -834,7 +834,7 @@ def shop_pagination(request):
     products = products.filter(price__gte=min_price, price__lte=max_price)
 
     # Paginate products (e.g., 6 products per page)
-    products_per_page = 6
+    products_per_page = 3
     start_index = (page - 1) * products_per_page
     end_index = start_index + products_per_page
     paginated_products = products[start_index:end_index]
