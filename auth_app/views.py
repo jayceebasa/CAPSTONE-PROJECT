@@ -814,3 +814,30 @@ def delete_address(request):
         except json.JSONDecodeError:
             return JsonResponse({'success': False, 'error': 'Invalid JSON'})
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
+  
+  
+def shop_pagination(request):
+    # Get the current page from the request
+    page = int(request.GET.get('page', 1))
+    
+    # Get filters from the request
+    filter_value = request.GET.get('filter', '*')
+    min_price = request.GET.get('minPrice', 0)
+    max_price = request.GET.get('maxPrice', 1000000)
+
+    # Define your queryset and apply filters
+    products = Product.objects.all()
+
+    if filter_value != '*':
+        products = products.filter(type__iexact=filter_value)  # Filter by category
+
+    products = products.filter(price__gte=min_price, price__lte=max_price)
+
+    # Paginate products (e.g., 6 products per page)
+    products_per_page = 6
+    start_index = (page - 1) * products_per_page
+    end_index = start_index + products_per_page
+    paginated_products = products[start_index:end_index]
+
+    # Render the products to the template as a partial
+    return render(request, 'partials/product_list.html', {'products': paginated_products})

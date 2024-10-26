@@ -68,7 +68,7 @@
       </div>
     </div>
 
-    <div class="row product-lists">
+    <div class="row product-lists" id="product-list">
       {% for product in products %}
       <div class="col-lg-4 col-md-6 text-center product-item {{ product.type|lower }}" data-price="{{ product.price }}">
         <div class="single-product-item">
@@ -84,19 +84,9 @@
       </div>
       {% endfor %}
     </div>
-
-    <div class="col-lg-12 text-center">
-      <div class="pagination-wrap">
-        <ul>
-          <li><a href="#">Prev</a></li>
-          <li><a href="#">1</a></li>
-          <li><a class="active" href="#">2</a></li>
-          <li><a href="#">3</a></li>
-          <li><a href="#">Next</a></li>
-        </ul>
-      </div>
+    <div id="loading" style="text-align: center; display: none">
+      <p>Loading more products...</p>
     </div>
-    
   </div>
 </div>
 <!-- Notification -->
@@ -144,6 +134,8 @@
     let currentFilter = "*";
     let minPrice = 0;
     let maxPrice = 1000000;
+    let currentPage = 1; // Start with the first page
+    let isLoading = false;
 
     $("#mainFilter").on("change", function () {
       currentFilter = $(this).val();
@@ -200,35 +192,60 @@
       window.history.pushState({}, "", url);
     }
 
-    // Add to Cart functionality
-    $(".add-to-cart").on("click", function (event) {
-      event.preventDefault();
-      const productId = $(this).data("product-id");
+    // Infinite Scroll Functionality
+    $(window).on("scroll", function () {
+      const scrollPosition = $(window).scrollTop() + $(window).height();
+      const contentHeight = $(document).height();
 
-      fetch(`{% url 'core:add_to_cart' 0 %}`.replace("0", productId), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          "X-CSRFToken": "{{ csrf_token }}",
-        },
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.error) {
-            alert(data.error);
-          } else {
-            const cartIcon = document.querySelector(".shopping-cart");
-            const newCartCountElement = document.createElement("span");
-            newCartCountElement.className = "cart-count";
-            newCartCountElement.textContent = data.total_items;
-            cartIcon.appendChild(newCartCountElement);
+      if (scrollPosition >= contentHeight - 200 && !isLoading) {
+        // Trigger load before reaching the bottom
+        isLoading = true;
+        loadMoreProducts();
+      }
+    });
+
+    function loadMoreProducts() {
+      $("#loading").show();
+
+      $.ajax({
+        url: `{% url 'core:shop_pagination' %}?page=${++currentPage}&filter=${currentFilter}&minPrice=${minPrice}&maxPrice=${maxPrice}`,
+        method: "GET",
+        success: function (data) {
+          if (data.trim() === "") {
+            // Stop if no more products
+            $(window).off("scroll");
+            $("#loading").text("No more products to load");
+            return;
           }
 
-          // Show notification
-          $("#notification").text("Item added to cart!").fadeIn().delay(2000).fadeOut();
-        })
-        .catch((error) => console.error("Error:", error));
+          $("#product-list").append(data);
+          isLoading = false;
+          $("#loading").hide();
+          filterProducts(); // Reapply filters to new products
+        },
+        error: function () {
+          $("#loading").text("An error occurred. Try again later.");
+          isLoading = false;
+        },
+      });
+    }
+
+    // Adding item to cart and showing notification
+    $(".add-to-cart").on("click", function (e) {
+      e.preventDefault();
+      const productId = $(this).data("product-id");
+
+
+      $.ajax({
+        url: `/add-to-cart/${productId}/`,
+        method: "POST",
+        data: { product_id: productId },
+        success: function () {
+          $("#notification").fadeIn().delay(2000).fadeOut();
+        },
+      });
     });
   });
 </script>
+
 {% endblock content %}
