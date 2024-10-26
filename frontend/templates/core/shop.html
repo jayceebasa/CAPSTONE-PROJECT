@@ -31,26 +31,37 @@
     </div>
   </div>
 </div>
-<!-- end breadcrumb section -->
-
 <!-- products -->
-<div class="product-section mt-150 mb-150">
+<div class="product-section mt-100 mb-150">
   <div class="container">
     <div class="row">
       <div class="col-md-12" style="margin-bottom: -50px">
         <div class="product-filters">
-          <ul>
-            <li class="active" data-filter="*">All</li>
-            <li data-filter=".painting">Paintings</li>
-            <li data-filter=".handicraft">Handicrafts</li>
-          </ul>
           <div class="filter-controls" style="display: flex; gap: 20px; align-items: center; padding-top: 50px">
-            <select id="subFilter" class="form-select" style="display: none; width: 250px">
-              <!-- Subfilter options will be dynamically populated -->
-            </select>
-            <div class="price-filter" style="width: 250px; margin-top: 25px; margin-left: 50px">
-              <div id="price-range"></div>
-              <div class="price-values"><label for="price-range">Price Range:</label> <span id="price-min"></span> - <span id="price-max"></span></div>
+            <div style="display: flex; flex-direction: column; align-items: flex-start">
+              <label for="mainFilter">Category</label>
+              <select id="mainFilter" class="form-select" style="width: 250px">
+                <option value="*">All</option>
+                <option value=".painting">Paintings</option>
+                <option value=".handicraft">Handicrafts</option>
+              </select>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: flex-start">
+              <label for="subFilter" id="subFilterLabel" style="display: none">Subcategory</label>
+              <select id="subFilter" class="form-select" style="display: none; width: 250px">
+                <!-- Subfilter options will be dynamically populated -->
+              </select>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: flex-start">
+              <label for="priceFilter">Price Range</label>
+              <select id="priceFilter" class="form-select" style="width: 250px">
+                <option value="0-1000000">All Prices</option>
+                <option value="0-1000">₱0 - ₱1000</option>
+                <option value="1000-5000">₱1000 - ₱5000</option>
+                <option value="5000-10000">₱5000 - ₱10000</option>
+                <option value="10000-50000">₱10000 - ₱50000</option>
+                <option value="50000-100000">₱50000 - ₱100000</option>
+              </select>
             </div>
           </div>
         </div>
@@ -73,45 +84,21 @@
       </div>
       {% endfor %}
     </div>
-  </div>
-</div>
-<!-- end products -->
-<div class="row">
-  <div class="col-lg-12 text-center" style="margin-top: -100px !important; margin-bottom: 50px">
-    <div class="pagination-wrap">
-      <ul>
-        {% if products.has_previous %}
-        <li>
-          <a
-            href="?page={{ products.previous_page_number }}&filter={{ request.GET.filter|default:'*' }}&subfilter={{ request.GET.subfilter|default:'' }}&minPrice={{ request.GET.minPrice|default:0 }}&maxPrice={{ request.GET.maxPrice|default:max_price }}"
-            >Prev</a
-          >
-        </li>
-        {% else %}
-        <li class="disabled"><span>Prev</span></li>
-        {% endif %} {% for page_num in products.paginator.page_range %}
-        <li>
-          <a
-            class="{% if products.number == page_num %}active{% endif %}"
-            href="?page={{ page_num }}&filter={{ request.GET.filter|default:'*' }}&subfilter={{ request.GET.subfilter|default:'' }}&minPrice={{ request.GET.minPrice|default:0 }}&maxPrice={{ request.GET.maxPrice|default:max_price }}"
-            >{{ page_num }}</a
-          >
-        </li>
-        {% endfor %} {% if products.has_next %}
-        <li>
-          <a
-            href="?page={{ products.next_page_number }}&filter={{ request.GET.filter|default:'*' }}&subfilter={{ request.GET.subfilter|default:'' }}&minPrice={{ request.GET.minPrice|default:0 }}&maxPrice={{ request.GET.maxPrice|default:max_price }}"
-            >Next</a
-          >
-        </li>
-        {% else %}
-        <li class="disabled"><span>Next</span></li>
-        {% endif %}
-      </ul>
-    </div>
-  </div>
-</div>
 
+    <div class="col-lg-12 text-center">
+      <div class="pagination-wrap">
+        <ul>
+          <li><a href="#">Prev</a></li>
+          <li><a href="#">1</a></li>
+          <li><a class="active" href="#">2</a></li>
+          <li><a href="#">3</a></li>
+          <li><a href="#">Next</a></li>
+        </ul>
+      </div>
+    </div>
+    
+  </div>
+</div>
 <!-- Notification -->
 <div
   id="notification"
@@ -122,8 +109,6 @@
 <!-- JavaScript for Filtering and Adding to Cart -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.isotope/3.0.6/isotope.pkgd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.6.3/nouislider.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.6.3/nouislider.min.css" />
 
 <script>
   $(document).ready(function () {
@@ -158,24 +143,17 @@
 
     let currentFilter = "*";
     let minPrice = 0;
-    let maxPrice = Math.max(
-      ...$(".product-item")
-        .map(function () {
-          return parseFloat($(this).data("price"));
-        })
-        .get()
-    );
+    let maxPrice = 1000000;
 
-    $(".product-filters li").on("click", function () {
-      $(".product-filters li").removeClass("active");
-      $(this).addClass("active");
-
-      currentFilter = $(this).attr("data-filter");
+    $("#mainFilter").on("change", function () {
+      currentFilter = $(this).val();
 
       if (currentFilter === "*") {
         $("#subFilter").hide().empty();
+        $("#subFilterLabel").hide();
       } else {
         $("#subFilter").empty().show();
+        $("#subFilterLabel").show();
         subFilters[currentFilter.substring(1)].forEach((subFilter) => {
           $("#subFilter").append(new Option(subFilter.text, subFilter.value));
         });
@@ -186,39 +164,7 @@
       updateURL();
     });
 
-    $("#subFilter").on("change", function () {
-      filterProducts();
-      updateURL();
-    });
-
-    // Initialize price range slider
-    var priceSlider = document.getElementById("price-range");
-    noUiSlider.create(priceSlider, {
-      start: [0, maxPrice],
-      connect: true,
-      range: {
-        min: 0,
-        max: maxPrice,
-      },
-      step: 100,
-      tooltips: true,
-      format: {
-        to: function (value) {
-          return "₱" + value.toFixed(0);
-        },
-        from: function (value) {
-          return Number(value.replace("₱", ""));
-        },
-      },
-    });
-
-    priceSlider.noUiSlider.on("update", function (values, handle) {
-      minPrice = parseFloat(values[0].replace("₱", ""));
-      maxPrice = parseFloat(values[1].replace("₱", ""));
-
-      $("#price-min").text(values[0]);
-      $("#price-max").text(values[1]);
-
+    $("#subFilter, #priceFilter").on("change", function () {
       filterProducts();
       updateURL();
     });
@@ -230,6 +176,8 @@
       if (subFilter && subFilter !== "painting" && subFilter !== "handicraft") {
         filterValue = "." + subFilter;
       }
+
+      const [minPrice, maxPrice] = $("#priceFilter").val().split("-").map(parseFloat);
 
       $(".product-lists").isotope({
         filter: function () {

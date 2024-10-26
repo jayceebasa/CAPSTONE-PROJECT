@@ -99,23 +99,10 @@ def shop_view(request):
     products_list = Product.objects.all()
     product_types = Product.objects.values_list('type', flat=True).distinct()
     
-    # Pagination
-    paginator = Paginator(products_list, 12)  # Show 9 products per page
-    page_number = request.GET.get('page')
-    
-    try:
-        products = paginator.page(page_number)
-    except PageNotAnInteger:
-        # If page is not an integer, deliver first page.
-        products = paginator.page(1)
-    except EmptyPage:
-        # If page is out of range (e.g. 9999), deliver last page of results.
-        products = paginator.page(paginator.num_pages)
-    
     max_price = products_list.aggregate(Max('price'))['price__max']
     
     return render(request, 'core/shop.html', {
-        'products': products,
+        'products': products_list,
         'product_types': product_types,
         'max_price': max_price,
     })
