@@ -592,12 +592,42 @@ def cart_detail(request):
     cart_items = CartItem.objects.filter(cart=cart)
     total_price = 0
     sellers = cart_items.values('product__seller').distinct()
-    shipping_fee = 45 * sellers.count()
+    num_sellers = sellers.count()
+    
+    
+    user_location = get_user_location(request.user)
+    if user_location == "Luzon":
+        shipping_fee = 200
+    elif user_location == "Visayas":
+        shipping_fee = 500
+    elif user_location == "Mindanao":
+        shipping_fee = 800
+    else:
+        shipping_fee = 0  # Default shipping fee if location is unknown
+
     for item in cart_items:
         item.total_price = item.product.price * item.quantity
         total_price += item.total_price
-    return render(request, 'core/cart.html', {'cart_items': cart_items, 'total_price': total_price, 'shipping_fee': shipping_fee,})
-  
+
+    total_shipping_fee = shipping_fee * num_sellers
+
+    return render(request, 'core/cart.html', {
+        'cart_items': cart_items,
+        'total_price': total_price,
+        'shipping_fee': total_shipping_fee,
+        'user_location': user_location,
+    })
+
+def get_user_location(user):
+    if user.address:
+        if any(region in user.address for region in ["Ilocos Region", "Cagayan Valley", "Central Luzon", "CALABARZON", "MIMAROPA", "Bicol Region", "Cordillera Administrative Region", "National Capital Region"]):
+            return "Luzon"
+        if any(region in user.address for region in ["Western Visayas", "Central Visayas", "Eastern Visayas"]):
+            return "Visayas"
+        if any(region in user.address for region in ["Zamboanga Peninsula", "Northern Mindanao", "Davao Region", "SOCCSKSARGEN", "Caraga", "Bangsamoro Autonomous Region in Muslim Mindanao"]):
+            return "Mindanao"
+    return "Unknown"
+ 
 @login_required
 def remove_from_cart(request, item_id):
     cart_item = get_object_or_404(CartItem, id=item_id, cart__user=request.user)

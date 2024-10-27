@@ -1,7 +1,5 @@
 {% extends 'partials/base.html' %} {% load static %} {% block content %}
 
-
-
 <!-- Modal -->
 <div class="modal fade" id="confirmDeleteModal" tabindex="-1" role="dialog" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
   <div class="modal-dialog" role="document">
@@ -127,7 +125,7 @@
               </tr>
               <tr class="total-data">
                 <td><strong>Shipping: </strong></td>
-                <td>₱<span id="shipping">{% widthratio seller_list|length 1 45 %}</span></td>
+                <td>₱<span id="shipping">{{ shipping_fee }}</span></td>
               </tr>
               <tr class="total-data">
                 <td><strong>Total: </strong></td>
@@ -158,21 +156,23 @@
     const removeButtons = document.querySelectorAll(".remove-item");
     let itemIdToDelete;
 
-    
+    const userLocation = "{{ user_location }}";
+    let shippingFee = 0;
+
+    if (userLocation === "Luzon") {
+      shippingFee = 200;
+    } else if (userLocation === "Visayas") {
+      shippingFee = 500;
+    } else if (userLocation === "Mindanao") {
+      shippingFee = 800;
+    }
+
     function updateTotals(data) {
       document.getElementById("subtotal").textContent = data.total_price;
 
-      // Count unique sellers
-      const uniqueSellers = new Set();
-      document.querySelectorAll(".table-body-row").forEach((row) => {
-        uniqueSellers.add(row.dataset.sellerId);
-      });
-
-      const shippingFee = uniqueSellers.size * 45;
-      document.getElementById("shipping").textContent = shippingFee.toFixed(2);
-
       const total = parseFloat(data.total_price) + shippingFee;
       document.getElementById("total").textContent = total.toFixed(2);
+      document.getElementById("shipping").textContent = shippingFee.toFixed(2);
     }
 
     quantityInputs.forEach((input) => {
@@ -248,6 +248,5 @@
     });
   });
 </script>
-
 
 {% endblock content %}
