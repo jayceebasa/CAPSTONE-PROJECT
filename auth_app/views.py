@@ -2,9 +2,9 @@
 from rest_framework.views import APIView
 from .serializers import UserSerializer, TransactionSerializer
 from rest_framework.response import Response 
-from .models import User, Transaction, Product, Cart, CartItem
+from .models import User, Transaction, Product, Cart, CartItem, UserAddress, LoginEvent
 from django.conf import settings
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.contrib.auth.hashers import make_password
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.exceptions import InvalidToken
@@ -12,9 +12,11 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.response import Response
 from rest_framework import status
 import jwt
+from django.db.models import Max
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.contrib.auth import login as auth_login, logout as auth_logout, authenticate
 from django.shortcuts import redirect
 from rest_framework.authtoken.views import ObtainAuthToken
@@ -32,18 +34,27 @@ from rest_framework.decorators import permission_classes
 from rest_framework import generics
 from .models import Product
 from django.views.decorators.csrf import csrf_exempt
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth import get_user_model
-import time
+from django.utils import timezone
+from datetime import timedelta
+from django.db.models import Count
 import json
 import logging
 from django.shortcuts import render, get_object_or_404
 import random
+from django.contrib.auth.hashers import check_password
+from django.core.serializers import serialize
+from django.utils.safestring import mark_safe
+from rest_framework.pagination import PageNumberPagination
 from django.core.mail import send_mail
 from django.utils.crypto import get_random_string
 from django.template.loader import render_to_string
+from functools import wraps
+from django.contrib.auth.forms import PasswordChangeForm
+from django.http import HttpResponseForbidden
 logger = logging.getLogger(__name__)
 
 User = get_user_model()
@@ -72,17 +83,29 @@ class Register(APIView):
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 @login_required
 def index(request):
+    user = request.user
+    if user.is_authenticated and user.role == 'Admin':
+        return render(request, 'core/admin.html')
+    
     all_products = list(Product.objects.all())
     related_products = random.sample(all_products, min(len(all_products), 3))
     return render(request, 'core/index.html', {'all_products': all_products, 'related_products': related_products})
 
 @login_required
 def shop_view(request):
-    products = Product.objects.all()
+    products_list = Product.objects.all()
     product_types = Product.objects.values_list('type', flat=True).distinct()
-    return render(request, 'core/shop.html', {'products': products, 'product_types': product_types})
+    
+    max_price = products_list.aggregate(Max('price'))['price__max']
+    
+    return render(request, 'core/shop.html', {
+        'products': products_list,
+        'product_types': product_types,
+        'max_price': max_price,
+    })
   
 @login_required
 def user_profile(request):
@@ -96,7 +119,17 @@ def user_profile(request):
     else:
         form = ProfileImageForm(instance=request.user)
 
-    return render(request, 'core/prof_user.html', {'form': form, 'user': request.user, 'transactions': Transaction.objects.filter(user=request.user).order_by('-date')})
+    # Fetch transactions and apply pagination
+    transactions = Transaction.objects.filter(user=request.user).order_by('-date')
+    paginator = Paginator(transactions, 4)  # Show 4 transactions per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'core/prof_user.html', {
+        'form': form,
+        'user': request.user,
+        'transactions': page_obj
+    })
 
 # views.py
 
@@ -132,8 +165,7 @@ def seller_profile(request):
         'transactions': transaction_page_obj
     })
 
-def admin_view(request):
-    return render(request, 'core/admin.html')
+
 
 @login_required
 def transaction_history(request):
@@ -168,9 +200,13 @@ def login_view(request):
             
             auth_login(request, user)  # Log in the user using Django's session framework
 
+
+            LoginEvent.objects.create(user=user)
+            
+            
             # Check the user's role and redirect accordingly
             if user.role == 'Admin':
-                return redirect('core:admin_view')
+                return redirect('core:admin')
             elif user.role == 'Seller':
                 return redirect('core:sellers')
             else:
@@ -534,12 +570,15 @@ def add_to_cart(request, product_id):
         cart, created = Cart.objects.get_or_create(user=request.user)
         cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
         
-        # If the cart item already exists, update the quantity
-        if not created:
-            cart_item.quantity += quantity
-        else:
-            cart_item.quantity = quantity
+        # Calculate the new total quantity
+        new_total_quantity = cart_item.quantity + quantity if not created else quantity
         
+        # Check if the new total quantity exceeds the available stock
+        if new_total_quantity > product.stock:
+            return JsonResponse({'error': 'Not enough stock available'})
+
+        # Update the cart item quantity
+        cart_item.quantity = new_total_quantity
         cart_item.save()
         
         total_items = CartItem.objects.filter(cart=cart).count()
@@ -552,11 +591,43 @@ def cart_detail(request):
     cart = get_object_or_404(Cart, user=request.user)
     cart_items = CartItem.objects.filter(cart=cart)
     total_price = 0
+    sellers = cart_items.values('product__seller').distinct()
+    num_sellers = sellers.count()
+    
+    
+    user_location = get_user_location(request.user)
+    if user_location == "Luzon":
+        shipping_fee = 200
+    elif user_location == "Visayas":
+        shipping_fee = 500
+    elif user_location == "Mindanao":
+        shipping_fee = 800
+    else:
+        shipping_fee = 0  # Default shipping fee if location is unknown
+
     for item in cart_items:
         item.total_price = item.product.price * item.quantity
         total_price += item.total_price
-    return render(request, 'core/cart.html', {'cart_items': cart_items, 'total_price': total_price})
-  
+
+    total_shipping_fee = shipping_fee * num_sellers
+
+    return render(request, 'core/cart.html', {
+        'cart_items': cart_items,
+        'total_price': total_price,
+        'shipping_fee': total_shipping_fee,
+        'user_location': user_location,
+    })
+
+def get_user_location(user):
+    if user.address:
+        if any(region in user.address for region in ["Ilocos Region", "Cagayan Valley", "Central Luzon", "CALABARZON", "MIMAROPA", "Bicol Region", "Cordillera Administrative Region", "National Capital Region"]):
+            return "Luzon"
+        if any(region in user.address for region in ["Western Visayas", "Central Visayas", "Eastern Visayas"]):
+            return "Visayas"
+        if any(region in user.address for region in ["Zamboanga Peninsula", "Northern Mindanao", "Davao Region", "SOCCSKSARGEN", "Caraga", "Bangsamoro Autonomous Region in Muslim Mindanao"]):
+            return "Mindanao"
+    return "Unknown"
+ 
 @login_required
 def remove_from_cart(request, item_id):
     cart_item = get_object_or_404(CartItem, id=item_id, cart__user=request.user)
@@ -610,3 +681,198 @@ def delete_product(request, product_id):
     product.delete()
     return JsonResponse({'success': True})
 
+
+def save_selected_address(request):
+    address = request.POST.get('address')
+    if address:
+        user = request.user
+        user.address = address  # Assuming the address field is named 'address'
+        user.save()
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False, 'error': 'No address provided'})
+  
+@csrf_exempt
+@login_required
+def save_address(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        full_address = data.get('address')
+        if full_address:
+            UserAddress.objects.create(user=request.user, address=full_address)
+            return JsonResponse({'success': True})
+        return JsonResponse({'success': False, 'error': 'Invalid address'})
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+@login_required
+def get_addresses(request):
+    addresses = UserAddress.objects.filter(user=request.user).values_list('address', flat=True)
+    selected_address = request.user.address if hasattr(request.user, 'address') else ""
+    return JsonResponse({'success': True, 'addresses': list(addresses), 'selectedAddress': selected_address})
+  
+  
+  
+
+#<========ADMIN VIEWS===========>
+
+def admin_required(view_func):
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if request.user.is_authenticated and request.user.role == 'Admin':
+            return view_func(request, *args, **kwargs)
+        else:
+            return HttpResponseForbidden("You do not have permission to access this page.")
+    return _wrapped_view
+
+@login_required
+@admin_required
+def admin_view(request):
+    # Fetch and paginate transactions
+    transactions = Transaction.objects.order_by('-date')
+    transaction_paginator = Paginator(transactions, 5)  # Show 5 transactions per page
+    transaction_page_number = request.GET.get('page')
+    transaction_page_obj = transaction_paginator.get_page(transaction_page_number)
+
+    # Fetch and paginate users excluding Admins
+    users = User.objects.exclude(role='Admin').order_by('username')
+    user_paginator = Paginator(users, 5)  # Show 5 users per page
+    user_page_number = request.GET.get('page')
+    user_page_obj = user_paginator.get_page(user_page_number)
+
+    # Serialize user data to JSON
+    users_json = mark_safe(json.dumps(list(users.values('id', 'username', 'email', 'first_name', 'last_name', 'role', 'is_active'))))
+
+    return render(request, 'core/admin.html', {
+        'user': request.user,
+        'transactions': transactions,
+        'users': user_page_obj,
+        'users_json': users_json  # Pass the JSON data to the template
+    })
+    
+def login_data(request):
+    data_type = request.GET.get('type', 'daily')
+    today = timezone.now().date()
+    
+    if data_type == 'weekly':
+        data_type = request.GET.get('type', 'daily')
+    today = timezone.now().date()
+    
+    if data_type == 'weekly':
+        start_date = today - timedelta(days=6)
+        logins = LoginEvent.objects.filter(timestamp__date__gte=start_date).extra({'login_date': 'date(timestamp)'}).values('login_date').annotate(count=Count('id')).order_by('login_date')
+    else:
+        start_date = today
+        logins = LoginEvent.objects.filter(timestamp__date=start_date).extra({'login_date': 'date(timestamp)'}).values('login_date').annotate(count=Count('id')).order_by('login_date')
+    
+    data = {login['login_date']: login['count'] for login in logins}
+    return JsonResponse(data)
+  
+def user_creation_data(request):
+    data_type = request.GET.get('type', 'daily')
+    today = timezone.now().date()
+    
+    if data_type == 'weekly':
+        start_date = today - timedelta(days=6)
+        users = User.objects.filter(date_joined__date__gte=start_date).extra({'creation_date': 'date(date_joined)'}).values('creation_date').annotate(count=Count('id')).order_by('creation_date')
+    else:
+        start_date = today
+        users = User.objects.filter(date_joined__date=start_date).extra({'creation_date': 'date(date_joined)'}).values('creation_date').annotate(count=Count('id')).order_by('creation_date')
+    
+    data = {user['creation_date']: user['count'] for user in users}
+    return JsonResponse(data)  
+  
+def sales_today(request):
+    today = timezone.now().date()
+    sales = Transaction.objects.filter(date__date=today, status='Delivered').aggregate(total_sales=Sum('amount'))
+    return JsonResponse(sales)
+
+def total_sales(request):
+    sales = Transaction.objects.filter(status='Delivered').aggregate(total_sales=Sum('amount'))
+    return JsonResponse(sales)
+
+def pending_orders(request):
+    pending = Transaction.objects.filter(status='processing').count()
+    return JsonResponse({'pending_orders': pending})
+
+@csrf_exempt
+@require_POST
+def toggle_user_status(request, user_id):
+    try:
+        user = User.objects.get(id=user_id)
+        user.is_active = not user.is_active
+        user.save()
+        return JsonResponse({"is_active": user.is_active})
+    except User.DoesNotExist:
+        return JsonResponse({"error": "User not found"}, status=404)
+
+@csrf_exempt
+def change_admin_password(request):
+    if request.method == "POST":
+        old_password = request.POST.get("old_password")
+        new_password1 = request.POST.get("new_password1")
+        new_password2 = request.POST.get("new_password2")
+
+        user = request.user
+
+        # Check if old password is correct
+        if not check_password(old_password, user.password):
+            return JsonResponse({"status": "error", "message": "Old password is incorrect."}, status=400)
+
+        # Check if new passwords match
+        if new_password1 != new_password2:
+            return JsonResponse({"status": "error", "message": "New passwords do not match."}, status=400)
+
+        # Check if new password is valid
+        if len(new_password1) < 8:
+            return JsonResponse({"status": "error", "message": "New password must be at least 8 characters."}, status=400)
+
+        # Update password and keep user logged in
+        user.set_password(new_password1)
+        user.save()
+        update_session_auth_hash(request, user)  # Keeps the user logged in after password change
+
+        return JsonResponse({"status": "success", "message": "Password updated successfully."}, status=200)
+
+    return JsonResponse({"status": "error", "message": "Invalid request method.", "redirect": True}, status=405)
+  
+
+@csrf_exempt
+@login_required
+def delete_address(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            address = data.get('address')
+            if address:
+                UserAddress.objects.filter(user=request.user, address=address).delete()
+                return JsonResponse({'success': True})
+            return JsonResponse({'success': False, 'error': 'Invalid address'})
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Invalid JSON'})
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+  
+  
+def shop_pagination(request):
+    # Get the current page from the request
+    page = int(request.GET.get('page', 1))
+    
+    # Get filters from the request
+    filter_value = request.GET.get('filter', '*')
+    min_price = request.GET.get('minPrice', 0)
+    max_price = request.GET.get('maxPrice', 1000000)
+
+    # Define your queryset and apply filters
+    products = Product.objects.all()
+
+    if filter_value != '*':
+        products = products.filter(type__iexact=filter_value)  # Filter by category
+
+    products = products.filter(price__gte=min_price, price__lte=max_price)
+
+    # Paginate products (e.g., 6 products per page)
+    products_per_page = 3
+    start_index = (page - 1) * products_per_page
+    end_index = start_index + products_per_page
+    paginated_products = products[start_index:end_index]
+
+    # Render the products to the template as a partial
+    return render(request, 'partials/product_list.html', {'products': paginated_products})

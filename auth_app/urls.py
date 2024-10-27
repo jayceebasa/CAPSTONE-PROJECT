@@ -37,5 +37,16 @@ urlpatterns = [
     path('update_product/<int:product_id>/', views.update_product, name='update_product'),
     path('delete_product/<int:product_id>/', views.delete_product, name='delete_product'),
     path('verify-email/<str:token>/', views.VerifyEmail.as_view(), name='verify-email'),
-   
+    path('save-selected-address/', views.save_selected_address, name='save_selected_address'),
+    path('save-address/', views.save_address, name='save_address'),
+    path('get-addresses/', views.get_addresses, name='get_addresses'),
+    path('api/login-data/', views.login_data, name='login-data'),
+    path('api/sales-today/', views.sales_today, name='sales-today'),
+    path('api/total-sales/', views.total_sales, name='total-sales'),
+    path('api/pending-orders/', views.pending_orders, name='pending-orders'),
+    path('api/user-creation-data/', views.user_creation_data, name='user-creation-data'),
+    path('api/toggle-user-status/<int:user_id>/', views.toggle_user_status, name='toggle_user_status'),
+    path('change-admin-passowrd', views.change_admin_password, name='change_admin_password'),
+    path('delete-address/', views.delete_address, name='delete_address'),
+    path('shop/pagination/', views.shop_pagination, name='shop_pagination'),
 ]

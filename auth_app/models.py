@@ -3,6 +3,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 
 class User(AbstractUser):
+    is_subscribed = models.BooleanField(default=False)
     first_name = models.CharField(max_length=255)  # Pangalan ng user
     last_name = models.CharField(max_length=255)   # Apelyido ng user
     email = models.CharField(max_length=255, unique=True)  # Email ng user, dapat unique
@@ -45,3 +46,12 @@ class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
+    
+class UserAddress(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    address = models.TextField()
+    is_default = models.BooleanField(default=False)
+    
+class LoginEvent(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    timestamp = models.DateTimeField(auto_now_add=True)
