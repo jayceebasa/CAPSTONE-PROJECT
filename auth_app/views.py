@@ -83,7 +83,7 @@ class Register(APIView):
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@login_required
+
 @login_required
 def index(request):
     user = request.user
@@ -588,10 +588,12 @@ def cart_detail(request):
     cart = get_object_or_404(Cart, user=request.user)
     cart_items = CartItem.objects.filter(cart=cart)
     total_price = 0
+    sellers = cart_items.values('product__seller').distinct()
+    shipping_fee = 45 * sellers.count()
     for item in cart_items:
         item.total_price = item.product.price * item.quantity
         total_price += item.total_price
-    return render(request, 'core/cart.html', {'cart_items': cart_items, 'total_price': total_price})
+    return render(request, 'core/cart.html', {'cart_items': cart_items, 'total_price': total_price, 'shipping_fee': shipping_fee,})
   
 @login_required
 def remove_from_cart(request, item_id):

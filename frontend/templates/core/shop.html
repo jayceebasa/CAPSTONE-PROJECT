@@ -300,19 +300,28 @@
     }
 
     // Adding item to cart and showing notification
-    $(".add-to-cart").on("click", function (e) {
+    $(document).on("click", ".add-to-cart", function (e) {
       e.preventDefault();
       const productId = $(this).data("product-id");
 
       $.ajax({
         url: `/add-to-cart/${productId}/`,
         method: "POST",
+        headers: {
+          "X-CSRFToken": "{{ csrf_token }}",
+        },
         data: { product_id: productId },
         success: function () {
           $("#notification").fadeIn().delay(2000).fadeOut();
         },
+        error: function (xhr, status, error) {
+          console.error("Error adding to cart:", error);
+        },
       });
     });
+
+    // Check initial products on page load
+    checkInitialProducts();
   });
 </script>
 
