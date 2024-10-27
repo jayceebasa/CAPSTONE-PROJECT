@@ -1,6 +1,5 @@
 {% extends 'partials/base.html' %} {% load static %} {% block content %}
 
-
 <!-- search area -->
 <div class="search-area">
   <div class="container">
@@ -32,205 +31,290 @@
     </div>
   </div>
 </div>
-<!-- end breadcrumb section -->
-
 <!-- products -->
-<div class="product-section mt-150 mb-150">
+<div class="product-section mt-100 mb-150">
   <div class="container">
     <div class="row">
-      <div class="col-md-12" style="margin-bottom: -50px;">
+      <div class="col-md-12" style="margin-bottom: -50px">
         <div class="product-filters">
-          <ul>
-            <li class="active" data-filter="*">All</li>
-            <li data-filter=".painting">Paintings</li>
-            <li data-filter=".handicraft">Handicrafts</li>
-          </ul>
-          <div class="filter-controls" style="display: flex; gap: 20px; align-items: center; padding-top: 50px;">
-            <select id="subFilter" class="form-select" style="display: none; width: 250px;">
-              <!-- Subfilter options will be dynamically populated -->
-            </select>
-            <div class="price-filter" style="width: 250px; margin-top: 25px; margin-left: 50px;">
-              <div id="price-range"></div>
-              <div class="price-values">
-                <label for="price-range">Price Range:</label> <span id="price-min"></span> - <span id="price-max"></span>
-              </div>
+          <div class="filter-controls" style="display: flex; gap: 20px; align-items: center; padding-top: 50px">
+            <div style="display: flex; flex-direction: column; align-items: flex-start">
+              <label for="mainFilter">Category</label>
+              <select id="mainFilter" class="form-select" style="width: 250px">
+                <option value="*">All</option>
+                <option value=".painting">Paintings</option>
+                <option value=".handicraft">Handicrafts</option>
+              </select>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: flex-start">
+              <label for="subFilter" id="subFilterLabel" style="display: none">Subcategory</label>
+              <select id="subFilter" class="form-select" style="display: none; width: 250px">
+                <!-- Subfilter options will be dynamically populated -->
+              </select>
+            </div>
+            <div style="display: flex; flex-direction: column; align-items: flex-start">
+              <label for="priceFilter">Price Range</label>
+              <select id="priceFilter" class="form-select" style="width: 250px">
+                <option value="0-1000000">All Prices</option>
+                <option value="0-1000">₱0 - ₱1000</option>
+                <option value="1000-5000">₱1000 - ₱5000</option>
+                <option value="5000-10000">₱5000 - ₱10000</option>
+                <option value="10000-50000">₱10000 - ₱50000</option>
+                <option value="50000-100000">₱50000 - ₱100000</option>
+              </select>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="row product-lists">
+    <div class="row product-lists" id="product-list">
       {% for product in products %}
       <div class="col-lg-4 col-md-6 text-center product-item {{ product.type|lower }}" data-price="{{ product.price }}">
         <div class="single-product-item">
-          <div class="product-image" style="height:250px; margin-bottom: 50px;">
+          <div class="product-image" style="height: 250px; margin-bottom: 50px">
             <a href="{% url 'core:single_product' product.id %}">
-              <img src="{{ product.image.url }}" alt="{{ product.name }}" />
+              <img src="{{ product.image.url }}" alt="{{ product.name }}" style="max-height: 210px !important; max-width: 210px !important" />
             </a>
           </div>
           <h3>{{ product.name }}</h3>
-            <p class="product-price"><span>{{ product.type.split|first }}</span> ₱{{ product.price }}</p>
+          <p class="product-price"><span>{{ product.type.split|first }}</span> ₱{{ product.price }}</p>
           <a href="#" class="cart-btn add-to-cart" data-product-id="{{ product.id }}"><i class="fas fa-shopping-cart"></i> Add to Cart</a>
         </div>
       </div>
       {% endfor %}
     </div>
+    <div id="loading" style="text-align: center; display: none">
+      <p>Loading more products...</p>
+    </div>
   </div>
 </div>
-<!-- end products -->
-
 <!-- Notification -->
-<div id="notification" style="display: none; position: fixed; top: 20px; right: 20px; background: #28a745; color: white; padding: 10px; border-radius: 5px; z-index: 1000;">
+<div
+  id="notification"
+  style="display: none; position: fixed; top: 20px; right: 20px; background: #28a745; color: white; padding: 10px; border-radius: 5px; z-index: 1000">
   Item added to cart!
 </div>
 
 <!-- JavaScript for Filtering and Adding to Cart -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.isotope/3.0.6/isotope.pkgd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.6.3/nouislider.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/14.6.3/nouislider.min.css" />
 
 <script>
-  $(document).ready(function() {
-      const subFilters = {
-          painting: [
-              { value: 'painting', text: 'All' },
-              { value: 'oil', text: 'Oil Paintings' },
-              { value: 'watercolor', text: 'Watercolor Paintings' },
-              { value: 'acrylic', text: 'Acrylic Paintings' },
-              { value: 'digital', text: 'Digital Paintings' },
-              { value: 'pastel', text: 'Pastel Paintings' },
-              { value: 'spray', text: 'Spray Paintings' },
-              { value: 'ink-wash', text: 'Inkwash Paintings' },
-              { value: 'encaustic', text: 'Encaustic Paintings' },
-              { value: 'fresco', text: 'Fresco Paintings' },
-              { value: 'gouache', text: 'Gouache Paintings' },  
-          ],
-          handicraft: [
-              { value: 'handicraft', text: 'All' },
-              { value: 'crochet', text: 'Crochet' },
-              { value: 'embroidery', text: 'Embroidery' },
-              { value: 'weaving', text: 'Weaving' },
-              { value: 'macramé', text: 'Macramé' },
-              { value: 'pottery', text: 'Pottery & Ceramics' },
-              { value: 'woodcrafts', text: 'Woodcrafts' },
-              { value: 'origami', text: 'Origami & PaperCrafts' },
-              { value: 'basketry', text: 'Basketry' },
-              { value: 'quilts', text: 'Quilts' },
-              { value: 'beadwork', text: 'Beadwork' }
-          ]
-      };
-  
-      let currentFilter = '*';
-      let minPrice = 0;
-      let maxPrice = Math.max(...$('.product-item').map(function() {
-          return parseFloat($(this).data('price'));
-      }).get());
-  
-      $(".product-filters li").on('click', function () {
-          $(".product-filters li").removeClass("active");
-          $(this).addClass("active");
-  
-          currentFilter = $(this).attr('data-filter');
-  
-          if (currentFilter === '*') {
-              $('#subFilter').hide().empty();
-          } else {
-              $('#subFilter').empty().show();
-              subFilters[currentFilter.substring(1)].forEach(subFilter => {
-                  $('#subFilter').append(new Option(subFilter.text, subFilter.value));
-              });
-              $('#subFilter').val(currentFilter.substring(1)).trigger('change');
-          }
-  
-          filterProducts();
+  $(document).ready(function () {
+    const subFilters = {
+      painting: [
+        { value: "painting", text: "All", selected: true },
+        { value: "oil", text: "Oil Paintings" },
+        { value: "watercolor", text: "Watercolor Paintings" },
+        { value: "acrylic", text: "Acrylic Paintings" },
+        { value: "digital", text: "Digital Paintings" },
+        { value: "pastel", text: "Pastel Paintings" },
+        { value: "spray", text: "Spray Paintings" },
+        { value: "ink-wash", text: "Inkwash Paintings" },
+        { value: "encaustic", text: "Encaustic Paintings" },
+        { value: "fresco", text: "Fresco Paintings" },
+        { value: "gouache", text: "Gouache Paintings" },
+      ],
+      handicraft: [
+        { value: "handicraft", text: "All", selected: true },
+        { value: "crochet", text: "Crochet" },
+        { value: "embroidery", text: "Embroidery" },
+        { value: "weaving", text: "Weaving" },
+        { value: "macramé", text: "Macramé" },
+        { value: "pottery", text: "Pottery & Ceramics" },
+        { value: "woodcrafts", text: "Woodcrafts" },
+        { value: "origami", text: "Origami & PaperCrafts" },
+        { value: "basketry", text: "Basketry" },
+        { value: "quilts", text: "Quilts" },
+        { value: "beadwork", text: "Beadwork" },
+      ],
+    };
+
+    let currentFilter = ".painting"; // Set default filter to Paintings
+    let minPrice = 0;
+    let maxPrice = 1000000;
+    let currentPage = 1; // Start with the first page
+    let isLoading = false;
+
+    // Set default URL parameters to Paintings category
+    const url = new URL(window.location.href);
+    url.searchParams.set("filter", ".painting");
+    url.searchParams.set("subfilter", "painting");
+    url.searchParams.set("minPrice", "0");
+    url.searchParams.set("maxPrice", "1000000");
+    window.history.replaceState({}, "", url);
+
+    // Update filters based on URL parameters
+    currentFilter = url.searchParams.get("filter") || ".painting";
+    const subFilter = url.searchParams.get("subfilter") || "painting";
+    minPrice = parseFloat(url.searchParams.get("minPrice")) || 0;
+    maxPrice = parseFloat(url.searchParams.get("maxPrice")) || 1000000;
+
+    $("#mainFilter").val(currentFilter);
+    if (currentFilter !== "*") {
+      $("#subFilter").empty().show();
+      $("#subFilterLabel").show();
+      subFilters[currentFilter.substring(1)].forEach((subFilter) => {
+        $("#subFilter").append(new Option(subFilter.text, subFilter.value));
       });
-  
-      $('#subFilter').on('change', function() {
-          filterProducts();
-      });
-  
-      // Initialize price range slider
-      var priceSlider = document.getElementById('price-range');
-      noUiSlider.create(priceSlider, {
-          start: [0, maxPrice],
-          connect: true,
-          range: {
-              'min': 0,
-              'max': maxPrice
-          },
-          step: 100,
-          tooltips: true,
-          format: {
-              to: function (value) {
-                  return '₱' + value.toFixed(0);
-              },
-              from: function (value) {
-                  return Number(value.replace('₱', ''));
-              }
-          }
-      });
-  
-      priceSlider.noUiSlider.on('update', function (values, handle) {
-          minPrice = parseFloat(values[0].replace('₱', ''));
-          maxPrice = parseFloat(values[1].replace('₱', ''));
-  
-          $('#price-min').text(values[0]);
-          $('#price-max').text(values[1]);
-  
-          filterProducts();
-      });
-  
-      function filterProducts() {
-          let subFilter = $('#subFilter').val();
-          let filterValue = currentFilter;
-  
-          if (subFilter && subFilter !== 'painting' && subFilter !== 'handicraft') {
-              filterValue = '.' + subFilter;
-          }
-  
-          $(".product-lists").isotope({
-              filter: function() {
-                  let price = parseFloat($(this).data('price'));
-                  let categoryMatch = filterValue === '*' || $(this).hasClass(filterValue.substring(1));
-                  let priceMatch = price >= minPrice && price <= maxPrice;
-                  return categoryMatch && priceMatch;
-              }
-          });
+      $("#subFilter").val(subFilter);
+    }
+
+    $("#priceFilter").val(`${minPrice}-${maxPrice}`);
+
+    $("#mainFilter").on("change", function () {
+      currentFilter = $(this).val();
+      currentPage = 1;
+
+      if (currentFilter === "*") {
+        $("#subFilter").hide().empty();
+        $("#subFilterLabel").hide();
+      } else {
+        $("#subFilter").empty().show();
+        $("#subFilterLabel").show();
+        subFilters[currentFilter.substring(1)].forEach((subFilter) => {
+          $("#subFilter").append(new Option(subFilter.text, subFilter.value));
+        });
+        $("#subFilter").val(currentFilter.substring(1)).trigger("change");
       }
-  
-      // Add to Cart functionality
-      $('.add-to-cart').on('click', function(event) {
-          event.preventDefault();
-          const productId = $(this).data('product-id');
-  
-          fetch(`{% url 'core:add_to_cart' 0 %}`.replace('0', productId), {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/x-www-form-urlencoded',
-                  'X-CSRFToken': '{{ csrf_token }}'
-              }
-          })
-          .then(response => response.json())
-          .then((data) => {
-              if (data.error) {
-                  alert(data.error);
-              } else {
-                const cartIcon = document.querySelector(".shopping-cart");
-                const newCartCountElement = document.createElement("span");
-                newCartCountElement.className = "cart-count";
-                newCartCountElement.textContent = data.total_items;
-                cartIcon.appendChild(newCartCountElement);
-              }
-  
-              // Show notification
-              $('#notification').text('Item added to cart!').fadeIn().delay(2000).fadeOut();
-            }
-      )
-          .catch((error) => console.error("Error:", error));
+
+      filterProducts();
+      updateURL();
+    });
+
+    $("#subFilter, #priceFilter").on("change", function () {
+      currentPage = 1;
+      filterProducts();
+      updateURL();
+    });
+
+    // Function to check if there are products on the initial load
+    function checkInitialProducts() {
+      if ($("#product-list").children().length === 0) {
+        $("#loading").text("No products available.");
+        $(window).off("scroll");
+      } else {
+        $(window).on("scroll", function () {
+          const scrollPosition = $(window).scrollTop() + $(window).height();
+          const contentHeight = $(document).height();
+
+          if (scrollPosition >= contentHeight - 200 && !isLoading) {
+            // Trigger load before reaching the bottom
+            isLoading = true;
+            loadMoreProducts();
+          }
+        });
+      }
+    }
+
+    function filterProducts() {
+      let subFilter = $("#subFilter").val();
+      let filterValue = currentFilter;
+
+      if (subFilter && subFilter !== "painting" && subFilter !== "handicraft") {
+        filterValue = "." + subFilter;
+      }
+
+      const [minPrice, maxPrice] = $("#priceFilter").val().split("-").map(parseFloat);
+
+      $(".product-lists").isotope({
+        filter: function () {
+          let price = parseFloat($(this).data("price"));
+          let categoryMatch = filterValue === "*" || $(this).hasClass(filterValue.substring(1));
+          let priceMatch = price >= minPrice && price <= maxPrice;
+          return categoryMatch && priceMatch;
+        },
       });
+    }
+
+    function updateURL() {
+      let subFilter = $("#subFilter").val();
+      let filterValue = currentFilter.substring(1);
+      let url = new URL(window.location.href);
+      url.searchParams.set("filter", filterValue);
+      url.searchParams.set("subfilter", subFilter);
+      url.searchParams.set("minPrice", minPrice);
+      url.searchParams.set("maxPrice", maxPrice);
+      url.searchParams.set("page", currentPage);
+      window.history.pushState({}, "", url);
+    }
+
+    // Infinite Scroll Functionality
+    $(window).on("scroll", function () {
+      const scrollPosition = $(window).scrollTop() + $(window).height();
+      const contentHeight = $(document).height();
+
+      if (scrollPosition >= contentHeight - 200 && !isLoading) {
+        // Trigger load before reaching the bottom
+        isLoading = true;
+        loadMoreProducts();
+      }
+    });
+
+    function loadMoreProducts() {
+      $("#loading").show();
+
+      $.ajax({
+        url: `{% url 'core:shop_pagination' %}?page=${++currentPage}&filter=${currentFilter}&minPrice=${minPrice}&maxPrice=${maxPrice}`,
+        method: "GET",
+        success: function (data) {
+          console.log(data); // Log the response data for debugging
+          if (data.trim() === "") {
+            // Stop if no more products
+            $(window).off("scroll");
+            $("#loading").text("No more products to load");
+            return;
+          }
+
+          // Convert the response data to a jQuery object for easier manipulation
+          const newProducts = $(data).find(".product-item");
+          const existingIds = $("#product-list .product-item")
+            .map(function () {
+              return $(this).data("product-id");
+            })
+            .get();
+
+          // Filter out any duplicate products
+          const filteredNewProducts = newProducts.filter(function () {
+            return !existingIds.includes($(this).data("product-id"));
+          });
+
+          console.log("Filtered New Products: ", filteredNewProducts); // Log filtered new products for debugging
+
+          if (filteredNewProducts.length > 0) {
+            $("#product-list").append(filteredNewProducts); // Append only new products
+          } else {
+            // If no new products, stop infinite scroll
+            $(window).off("scroll");
+            $("#loading").text("No more new products to load.");
+          }
+
+          isLoading = false;
+          $("#loading").hide(); // Hide loading after processing
+        },
+        error: function () {
+          $("#loading").text("An error occurred. Try again later.");
+          isLoading = false;
+        },
+      });
+    }
+
+    // Adding item to cart and showing notification
+    $(".add-to-cart").on("click", function (e) {
+      e.preventDefault();
+      const productId = $(this).data("product-id");
+
+      $.ajax({
+        url: `/add-to-cart/${productId}/`,
+        method: "POST",
+        data: { product_id: productId },
+        success: function () {
+          $("#notification").fadeIn().delay(2000).fadeOut();
+        },
+      });
+    });
   });
-  </script>
+</script>
 
 {% endblock content %}

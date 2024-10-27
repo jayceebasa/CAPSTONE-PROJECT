@@ -12,6 +12,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.response import Response
 from rest_framework import status
 import jwt
+from django.db.models import Max
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
@@ -33,7 +34,7 @@ from rest_framework.decorators import permission_classes
 from rest_framework import generics
 from .models import Product
 from django.views.decorators.csrf import csrf_exempt
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth import get_user_model
@@ -44,6 +45,7 @@ import json
 import logging
 from django.shortcuts import render, get_object_or_404
 import random
+from django.contrib.auth.hashers import check_password
 from django.core.serializers import serialize
 from django.utils.safestring import mark_safe
 from rest_framework.pagination import PageNumberPagination
@@ -51,6 +53,7 @@ from django.core.mail import send_mail
 from django.utils.crypto import get_random_string
 from django.template.loader import render_to_string
 from functools import wraps
+from django.contrib.auth.forms import PasswordChangeForm
 from django.http import HttpResponseForbidden
 logger = logging.getLogger(__name__)
 
@@ -93,9 +96,16 @@ def index(request):
 
 @login_required
 def shop_view(request):
-    products = Product.objects.all()
+    products_list = Product.objects.all()
     product_types = Product.objects.values_list('type', flat=True).distinct()
-    return render(request, 'core/shop.html', {'products': products, 'product_types': product_types})
+    
+    max_price = products_list.aggregate(Max('price'))['price__max']
+    
+    return render(request, 'core/shop.html', {
+        'products': products_list,
+        'product_types': product_types,
+        'max_price': max_price,
+    })
   
 @login_required
 def user_profile(request):
@@ -698,7 +708,7 @@ def admin_view(request):
 
     return render(request, 'core/admin.html', {
         'user': request.user,
-        'transactions': transaction_page_obj,
+        'transactions': transactions,
         'users': user_page_obj,
         'users_json': users_json  # Pass the JSON data to the template
     })
@@ -758,3 +768,76 @@ def toggle_user_status(request, user_id):
         return JsonResponse({"is_active": user.is_active})
     except User.DoesNotExist:
         return JsonResponse({"error": "User not found"}, status=404)
+
+@csrf_exempt
+def change_admin_password(request):
+    if request.method == "POST":
+        old_password = request.POST.get("old_password")
+        new_password1 = request.POST.get("new_password1")
+        new_password2 = request.POST.get("new_password2")
+
+        user = request.user
+
+        # Check if old password is correct
+        if not check_password(old_password, user.password):
+            return JsonResponse({"status": "error", "message": "Old password is incorrect."}, status=400)
+
+        # Check if new passwords match
+        if new_password1 != new_password2:
+            return JsonResponse({"status": "error", "message": "New passwords do not match."}, status=400)
+
+        # Check if new password is valid
+        if len(new_password1) < 8:
+            return JsonResponse({"status": "error", "message": "New password must be at least 8 characters."}, status=400)
+
+        # Update password and keep user logged in
+        user.set_password(new_password1)
+        user.save()
+        update_session_auth_hash(request, user)  # Keeps the user logged in after password change
+
+        return JsonResponse({"status": "success", "message": "Password updated successfully."}, status=200)
+
+    return JsonResponse({"status": "error", "message": "Invalid request method.", "redirect": True}, status=405)
+  
+
+@csrf_exempt
+@login_required
+def delete_address(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            address = data.get('address')
+            if address:
+                UserAddress.objects.filter(user=request.user, address=address).delete()
+                return JsonResponse({'success': True})
+            return JsonResponse({'success': False, 'error': 'Invalid address'})
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Invalid JSON'})
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+  
+  
+def shop_pagination(request):
+    # Get the current page from the request
+    page = int(request.GET.get('page', 1))
+    
+    # Get filters from the request
+    filter_value = request.GET.get('filter', '*')
+    min_price = request.GET.get('minPrice', 0)
+    max_price = request.GET.get('maxPrice', 1000000)
+
+    # Define your queryset and apply filters
+    products = Product.objects.all()
+
+    if filter_value != '*':
+        products = products.filter(type__iexact=filter_value)  # Filter by category
+
+    products = products.filter(price__gte=min_price, price__lte=max_price)
+
+    # Paginate products (e.g., 6 products per page)
+    products_per_page = 3
+    start_index = (page - 1) * products_per_page
+    end_index = start_index + products_per_page
+    paginated_products = products[start_index:end_index]
+
+    # Render the products to the template as a partial
+    return render(request, 'partials/product_list.html', {'products': paginated_products})

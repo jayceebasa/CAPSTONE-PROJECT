@@ -1,0 +1,14 @@
+{% for product in products %}
+<div class="col-lg-4 col-md-6 text-center product-item {{ product.type|lower }}" data-price="{{ product.price }}">
+  <div class="single-product-item">
+    <div class="product-image" style="height: 250px; margin-bottom: 50px">
+      <a href="{% url 'core:single_product' product.id %}">
+        <img src="{{ product.image.url }}" alt="{{ product.name }}" style="max-height: 210px !important; max-width: 210px !important" />
+      </a>
+    </div>
+    <h3>{{ product.name }}</h3>
+    <p class="product-price"><span>{{ product.type.split|first }}</span> ₱{{ product.price }}</p>
+    <a href="#" class="cart-btn add-to-cart" data-product-id="{{ product.id }}"><i class="fas fa-shopping-cart"></i> Add to Cart</a>
+  </div>
+</div>
+{% endfor %}

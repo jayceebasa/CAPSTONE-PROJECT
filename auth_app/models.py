@@ -3,6 +3,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 
 class User(AbstractUser):
+    is_subscribed = models.BooleanField(default=False)
     first_name = models.CharField(max_length=255)  # Pangalan ng user
     last_name = models.CharField(max_length=255)   # Apelyido ng user
     email = models.CharField(max_length=255, unique=True)  # Email ng user, dapat unique
