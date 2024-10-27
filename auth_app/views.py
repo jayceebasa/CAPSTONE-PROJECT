@@ -45,6 +45,7 @@ import json
 import logging
 from django.shortcuts import render, get_object_or_404
 import random
+from django.core.files.storage import FileSystemStorage
 from django.contrib.auth.hashers import check_password
 from django.core.serializers import serialize
 from django.utils.safestring import mark_safe
@@ -469,14 +470,22 @@ def update_profile(request):
         user.PhoneNumber = request.POST.get('PhoneNumber')
         user.email = request.POST.get('email')
         user.address = request.POST.get('address')
+        user_role = request.POST.get('user_role')
+
+        if 'gcash_qr' in request.FILES:
+            gcash_qr = request.FILES['gcash_qr']
+            fs = FileSystemStorage()
+            filename = fs.save(gcash_qr.name, gcash_qr)
+            uploaded_file_url = fs.url(filename)
+            user.qrcode = uploaded_file_url
+
         user.save()
         messages.success(request, 'Profile updated successfully')
-        user_role = request.POST.get('user_role')
-        
+
         if user_role == 'Seller':
             return redirect('/seller/')
-        else:     
-          return redirect('/users/')  # Redirect to the profile page after saving
+        else:
+            return redirect('/users/')  # Redirect to the profile page after saving
     else:
         return render(request, 'core/prof_user.html', {'user': request.user})
   
@@ -709,6 +718,21 @@ def get_addresses(request):
     selected_address = request.user.address if hasattr(request.user, 'address') else ""
     return JsonResponse({'success': True, 'addresses': list(addresses), 'selectedAddress': selected_address})
   
+
+@login_required
+def save_qr_code(request):
+    if request.method == 'POST' and request.FILES['gcash_qr']:
+        gcash_qr = request.FILES['gcash_qr']
+        fs = FileSystemStorage()
+        filename = fs.save(gcash_qr.name, gcash_qr)
+        uploaded_file_url = fs.url(filename)
+        
+        # Save the file path to the user's qrcode field
+        request.user.qrcode = uploaded_file_url
+        request.user.save()
+        
+        return redirect('profile')  # Redirect to the profile page or any other page
+    return render(request, 'prof_seller.html')
   
   
 

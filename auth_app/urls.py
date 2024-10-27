@@ -49,4 +49,5 @@ urlpatterns = [
     path('change-admin-passowrd', views.change_admin_password, name='change_admin_password'),
     path('delete-address/', views.delete_address, name='delete_address'),
     path('shop/pagination/', views.shop_pagination, name='shop_pagination'),
+    path('save-qr-code/', views.save_qr_code, name='save_qr_code'),
 ]

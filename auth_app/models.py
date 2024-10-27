@@ -12,6 +12,7 @@ class User(AbstractUser):
     address = models.TextField(null=True)  # Address ng user
     PhoneNumber = models.CharField(max_length=255, null=True)  # Phone
     picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True, default='profile_pictures/default_profpic.png')
+    qrcode = models.ImageField(upload_to='qrcodes/', null=True, blank=True)
     role = models.CharField(max_length=50, choices=[('admin', 'Admin'), ('user', 'User'), ('Seller', 'seller')], default='User')
     email_verification_token = models.CharField(max_length=32, blank=True, null=True)  # Add this line
 
