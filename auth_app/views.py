@@ -570,12 +570,15 @@ def add_to_cart(request, product_id):
         cart, created = Cart.objects.get_or_create(user=request.user)
         cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
         
-        # If the cart item already exists, update the quantity
-        if not created:
-            cart_item.quantity += quantity
-        else:
-            cart_item.quantity = quantity
+        # Calculate the new total quantity
+        new_total_quantity = cart_item.quantity + quantity if not created else quantity
         
+        # Check if the new total quantity exceeds the available stock
+        if new_total_quantity > product.stock:
+            return JsonResponse({'error': 'Not enough stock available'})
+
+        # Update the cart item quantity
+        cart_item.quantity = new_total_quantity
         cart_item.save()
         
         total_items = CartItem.objects.filter(cart=cart).count()
