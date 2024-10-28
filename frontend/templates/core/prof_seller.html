@@ -58,13 +58,35 @@
                   <li class="">
                     <a href="{% url 'core:home' %}">Home</a>
                   </li>
-                  <li><a href="about.html">About</a></li>
+
                   <li><a href="{% url 'core:shop' %}">Shop</a></li>
                   <li>
                     <div class="header-icons">
-                      <a class="shopping-cart" href="{% url 'core:cart_detail' %}"><i class="fas fa-shopping-cart"></i></a>
+                      <a class="shopping-cart" href="{% url 'core:cart_detail' %}">
+                        <i class="fas fa-shopping-cart"></i>
+                        {% if cart_item_count > 0 %}
+                        <span class="cart-count">{{ cart_item_count }}</span>
+                        {% endif %}
+                      </a>
+
+                      <!-- Add some CSS to style the cart count -->
+                      <style>
+                        .shopping-cart {
+                          position: relative;
+                        }
+                        .cart-count {
+                          position: absolute;
+                          top: 5px;
+                          right: -3px;
+                          background: rgb(255, 104, 104);
+                          color: white;
+                          border-radius: 50%;
+                          padding: 2px 6px;
+                          font-size: 8px;
+                        }
+                      </style>
                       <a class="mobile-hide user-icon" href="{% url 'core:sellers' %}"><i class="fas fa-user"></i></a>
-                      <a class="notification-icon" href="#"><i class="fas fa-bell"></i></a>
+
                       <a class="logout-button" href="{% url 'core:logout' %}">Logout</a>
                     </div>
                   </li>
