@@ -54,6 +54,7 @@ from django.core.mail import send_mail
 from django.utils.crypto import get_random_string
 from django.template.loader import render_to_string
 from functools import wraps
+from django.utils.decorators import method_decorator
 from django.contrib.auth.forms import PasswordChangeForm
 from django.http import HttpResponseForbidden
 logger = logging.getLogger(__name__)
@@ -388,23 +389,30 @@ class adminUpdateUsersView(APIView):
         except User.DoesNotExist:
             return Response({'error': 'User not found'}, status=404)
         
+@csrf_exempt
 @login_required
 def checkout(request):
-    cart = Cart.objects.get(user=request.user)
-    cart_items = CartItem.objects.filter(cart=cart)
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        item_ids = data.get('item_ids', [])
 
-    for item in cart_items:
-        Transaction.objects.create(
-            user=request.user,
-            product=item.product,
-            amount=item.product.price * item.quantity,
-            status='pending'  # or 'completed' based on your logic
-        )
+        cart = Cart.objects.get(user=request.user)
+        cart_items = CartItem.objects.filter(cart=cart, id__in=item_ids)
 
-    # Clear the cart after checkout
-    cart_items.delete()
+        for item in cart_items:
+            Transaction.objects.create(
+                user=request.user,
+                product=item.product,
+                amount=item.product.price * item.quantity,
+                status='pending'  # or 'completed' based on your logic
+            )
 
-    return redirect('core:shop')
+        # Clear the selected items from the cart after checkout
+        cart_items.delete()
+
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
       
 @api_view(['POST'])
 def add_product(request):

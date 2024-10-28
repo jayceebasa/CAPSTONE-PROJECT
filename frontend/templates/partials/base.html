@@ -134,7 +134,7 @@
                       <a class="mobile-hide user-icon" href="{% if user.role == 'Seller' %}{% url 'core:sellers' %}{% else %}{% url 'core:users' %}{% endif %}"
                         ><i class="fas fa-user"></i
                       ></a>
-                      <a class="notification-icon" href="#"><i class="fas fa-bell"></i></a>
+
                       <a class="logout-button" href="{% url 'core:logout' %}">Logout</a>
                     </div>
                   </li>
