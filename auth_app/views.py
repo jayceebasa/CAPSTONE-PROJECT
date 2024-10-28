@@ -388,14 +388,23 @@ class adminUpdateUsersView(APIView):
         except User.DoesNotExist:
             return Response({'error': 'User not found'}, status=404)
         
-@api_view(['POST'])
-def add_transaction(request):
-    if request.method == 'POST':
-        serializer = TransactionSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+@login_required
+def checkout(request):
+    cart = Cart.objects.get(user=request.user)
+    cart_items = CartItem.objects.filter(cart=cart)
+
+    for item in cart_items:
+        Transaction.objects.create(
+            user=request.user,
+            product=item.product,
+            amount=item.product.price * item.quantity,
+            status='pending'  # or 'completed' based on your logic
+        )
+
+    # Clear the cart after checkout
+    cart_items.delete()
+
+    return redirect('core:shop')
       
 @api_view(['POST'])
 def add_product(request):
