@@ -412,7 +412,7 @@ p:last-child {
 a.boxed-btn {
   font-family: 'Poppins', sans-serif;
   display: inline-block;
-  background-color: #F28123;
+  background-color: #84a1af;
   color: #fff;
   padding: 10px 20px;
 }
@@ -421,7 +421,7 @@ a.bordered-btn {
   font-family: 'Poppins', sans-serif;
   display: inline-block;
   color: #fff;
-  border: 2px solid #F28123;
+  border: 2px solid #84a1af;
   padding: 7px 20px;
 }
 
