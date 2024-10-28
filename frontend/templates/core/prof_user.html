@@ -742,7 +742,7 @@
                             <th scope="col">#</th>
                             <th scope="col" style="width: 10%">Image</th>
                             <th scope="col">Product</th>
-                            <th scope="col">Amount</th>
+                            <th scope="col">Quantity</th>
                             <th scope="col">Price</th>
                             <th scope="col">DOP</th>
                             <th scope="col">Status</th>
@@ -755,6 +755,7 @@
                             <th scope="row">{{ forloop.counter }}</th>
                             <td><img src="{{ transaction.product.image.url }}" alt="Product Image" style="max-width: 80px" /></td>
                             <td>{{ transaction.product.name }}</td>
+                            <td>{{ transaction.quantity }}</td>
                             <td>{{ transaction.amount }}</td>
                             <td>{{ transaction.product.price }}</td>
                             <td>{{ transaction.date }}</td>

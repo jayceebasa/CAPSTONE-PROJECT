@@ -151,34 +151,34 @@
           </div>
           <div class="cart-buttons">
             <a href="{% url 'core:checkout' %}" id="checkoutButton" class="boxed-btn black">Check Out</a>
-        </div>
-        
-        <script>
-          document.getElementById("checkoutButton").addEventListener("click", function (event) {
-            event.preventDefault(); // Prevent the default anchor behavior
-        
-            const selectedItems = document.querySelectorAll(".select-product:checked");
-            const selectedItemIds = Array.from(selectedItems).map(item => item.dataset.itemId);
-        
-            fetch("{% url 'core:checkout' %}", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": "{{ csrf_token }}",
-              },
-              body: JSON.stringify({ item_ids: selectedItemIds }),
-            })
-            .then(response => response.json())
-            .then(data => {
-              if (data.success) {
-                window.location.href = "{% url 'core:transaction_history' %}";
-              } else {
-                alert("Checkout failed. Please try again.");
-              }
-            })
-            .catch(error => console.error("Error:", error));
-          });
-        </script>
+          </div>
+
+          <script>
+            document.getElementById("checkoutButton").addEventListener("click", function (event) {
+              event.preventDefault(); // Prevent the default anchor behavior
+
+              const selectedItems = document.querySelectorAll(".select-product:checked");
+              const selectedItemIds = Array.from(selectedItems).map((item) => item.dataset.itemId);
+
+              fetch("{% url 'core:checkout' %}", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "X-CSRFToken": "{{ csrf_token }}",
+                },
+                body: JSON.stringify({ item_ids: selectedItemIds }),
+              })
+                .then((response) => response.json())
+                .then((data) => {
+                  if (data.success) {
+                    window.location.href = "{% url 'core:transaction_history' %}";
+                  } else {
+                    alert("Checkout failed. Please try again.");
+                  }
+                })
+                .catch((error) => console.error("Error:", error));
+            });
+          </script>
         </div>
       </div>
     </div>

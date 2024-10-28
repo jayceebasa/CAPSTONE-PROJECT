@@ -329,6 +329,8 @@
           },
           error: function (xhr, status, error) {
             console.error("Error adding to cart:", error);
+            // Show error notification
+            $("#notification").text("An error occurred. Please try again.").css("background", "#dc3545").fadeIn().delay(2000).fadeOut();
           },
         });
       });

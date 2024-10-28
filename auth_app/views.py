@@ -400,12 +400,21 @@ def checkout(request):
         cart_items = CartItem.objects.filter(cart=cart, id__in=item_ids)
 
         for item in cart_items:
+            product = item.product
+            quantity = item.quantity
+
+            # Create a transaction
             Transaction.objects.create(
                 user=request.user,
-                product=item.product,
-                amount=item.product.price * item.quantity,
+                product=product,
+                quantity=quantity,
+                amount=product.price * quantity,
                 status='pending'  # or 'completed' based on your logic
             )
+
+            # Subtract the quantity from the product's stock
+            product.stock -= quantity
+            product.save()
 
         # Clear the selected items from the cart after checkout
         cart_items.delete()
@@ -588,29 +597,36 @@ def single_product(request, id):
     related_products = random.sample(all_products, min(len(all_products), 3))
     return render(request, 'core/single-product.html', {'product': product, 'related_products': related_products})
   
+@csrf_exempt
 @login_required
 def add_to_cart(request, product_id):
     if request.method == 'POST':
-        product = get_object_or_404(Product, id=product_id)
-        quantity = int(request.POST.get('quantity', 1))
+        product = Product.objects.get(id=product_id)
+        quantity = int(request.POST.get('quantity', 1))  # Default to 1 if no quantity is provided
+        
+        if product.stock < quantity:
+            return JsonResponse({'error': 'Not enough stock available.'}, status=400)
+
         cart, created = Cart.objects.get_or_create(user=request.user)
         cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
-        
-        # Calculate the new total quantity
+
+                # Calculate the new total quantity
         new_total_quantity = cart_item.quantity + quantity if not created else quantity
         
         # Check if the new total quantity exceeds the available stock
         if new_total_quantity > product.stock:
-            return JsonResponse({'error': 'Not enough stock available'})
+            return JsonResponse({'error': 'Not enough stock available'}, status=400)
 
-        # Update the cart item quantity
-        cart_item.quantity = new_total_quantity
+        if not created:
+            cart_item.quantity += quantity
+        else:
+            cart_item.quantity = quantity
+
         cart_item.save()
-        
-        total_items = CartItem.objects.filter(cart=cart).count()
-        return JsonResponse({'total_items': total_items})
-    
-    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+        return JsonResponse({'success': True, 'total_items': cart.cartitem_set.count()})
+
+    return JsonResponse({'error': 'Invalid request method'}, status=400)
   
 @login_required
 def cart_detail(request):
