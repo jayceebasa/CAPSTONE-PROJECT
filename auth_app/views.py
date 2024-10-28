@@ -11,7 +11,7 @@ from rest_framework_simplejwt.exceptions import InvalidToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.response import Response
 from rest_framework import status
-import jwt
+import stripe
 from django.db.models import Max
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import render
@@ -389,15 +389,139 @@ class adminUpdateUsersView(APIView):
         except User.DoesNotExist:
             return Response({'error': 'User not found'}, status=404)
         
+
+
+stripe.api_key = 'sk_test_51QDpnXF9r59i88UrGV3ODAqM3pyIF6dbQRs9wXAm9y29uCcDDHTftSGFW40OB6z9CHagkxu4dqkODCn4wq8Jn02H00eXqGBvdG'
+endpoint_secret = 'whsec_aa6e46134ec598cf581426a4da7ff45a462cf883d4e151075b208cdea1f3af26'  # Replace with your webhook secret
+
+@csrf_exempt
+def stripe_webhook(request):
+    payload = request.body
+    sig_header = request.META['HTTP_STRIPE_SIGNATURE']
+    event = None
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, endpoint_secret
+        )
+    except ValueError as e:
+        # Invalid payload
+        return JsonResponse({'status': 'invalid payload'}, status=400)
+    except stripe.error.SignatureVerificationError as e:
+        # Invalid signature
+        return JsonResponse({'status': 'invalid signature'}, status=400)
+
+    # Handle the event
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        handle_successful_payment(session)
+    elif event['type'] == 'payment_method.attached':
+        payment_method = event['data']['object']
+        # Handle the event...
+    # ... handle other event types
+
+    return JsonResponse({'status': 'success'}, status=200)
+
+def handle_successful_payment(session):
+    customer_email = session['customer_email']
+    line_items = stripe.checkout.Session.list_line_items(session['id'])
+
+    # Find the user by email
+    user = User.objects.get(email=customer_email)
+
+    # Get the user's cart
+    cart = Cart.objects.get(user=user)
+    cart_items = CartItem.objects.filter(cart=cart)
+
+    # Create transactions for each line item
+    for item in line_items['data']:
+        product_name = item['description']
+        quantity = item['quantity']
+        amount = item['amount_total'] / 100  # Convert from cents to the original currency
+
+        # Find the product by name
+        product = Product.objects.get(name=product_name)
+
+        # Create a transaction
+        Transaction.objects.create(
+            user=user,
+            product=product,
+            quantity=quantity,
+            amount=amount,
+            status='completed'
+        )
+
+        # Subtract the quantity from the product's stock
+        product.stock -= quantity
+        product.save()
+
+    # Clear the selected items from the cart after checkout
+    cart_items.delete()
+
 @csrf_exempt
 @login_required
-def checkout(request):
+def create_stripe_session(request):
     if request.method == 'POST':
         data = json.loads(request.body)
         item_ids = data.get('item_ids', [])
 
         cart = Cart.objects.get(user=request.user)
         cart_items = CartItem.objects.filter(cart=cart, id__in=item_ids)
+
+        line_items = []
+        for item in cart_items:
+            product_image_url = request.build_absolute_uri(item.product.image.url) if item.product.image else None
+            line_items.append({
+                'price_data': {
+                    'currency': 'php',
+                    'product_data': {
+                        'name': f"Product: {item.product.name}",
+                        'images': [product_image_url] if product_image_url else [],
+                    },
+                    'unit_amount': int(item.product.price * 100),
+                },
+                'quantity': item.quantity,
+            })
+
+        try:
+            session = stripe.checkout.Session.create(
+                submit_type='pay',
+                payment_method_types=['card'],
+                billing_address_collection='auto',
+                customer_email=request.user.email,
+                line_items=line_items,
+                mode='payment',
+                success_url=f"{settings.FRONTEND_URL}/transaction_history/",
+                cancel_url=f"{settings.FRONTEND_URL}/cart",
+            )
+            return JsonResponse({'sessionId': session.id})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+
+    return JsonResponse({'error': 'Invalid request method'}, status=400)
+  
+@csrf_exempt
+@login_required
+def checkout(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        item_ids = data.get('item_ids', [])
+        payment_option = data.get('payment_option', 'cod')
+        stripe_token = data.get('stripeToken', None)
+
+        cart = Cart.objects.get(user=request.user)
+        cart_items = CartItem.objects.filter(cart=cart, id__in=item_ids)
+
+        if payment_option == 'bank' and stripe_token:
+            try:
+                charge = stripe.Charge.create(
+                    amount=int(cart_items.aggregate(Sum('product__price'))['product__price__sum'] * 100),  # Amount in cents
+                    currency='php',
+                    source=stripe_token,
+                    description='Bank Payment'
+                )
+            except stripe.error.StripeError as e:
+                return JsonResponse({'success': False, 'error': str(e)})
 
         for item in cart_items:
             product = item.product

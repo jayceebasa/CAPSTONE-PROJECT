@@ -150,7 +150,8 @@ USE_I18N = True
 
 USE_TZ = True
 
-
+FRONTEND_URL = 'http://127.0.0.1:8000'
+STRIPE_SECRET_KEY = 'sk_test_51QDpnXF9r59i88UrGV3ODAqM3pyIF6dbQRs9wXAm9y29uCcDDHTftSGFW40OB6z9CHagkxu4dqkODCn4wq8Jn02H00eXqGBvdG'
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 

@@ -141,8 +141,8 @@
           <div class="payment-options mt-4">
             <h4>Payment Options</h4>
             <div>
-              <input type="radio" id="gcashPayment" name="paymentOption" value="gcash" />
-              <label for="gcashPayment">Gcash</label>
+              <input type="radio" id="bankPayment" name="paymentOption" value="bank" />
+              <label for="bankPayment">Bank Payment</label>
             </div>
             <div>
               <input type="radio" id="codPayment" name="paymentOption" value="cod" checked />
@@ -153,14 +153,17 @@
             <a href="{% url 'core:checkout' %}" id="checkoutButton" class="boxed-btn black">Check Out</a>
           </div>
 
+          <script src="https://js.stripe.com/v3/"></script>
           <script>
             document.getElementById("checkoutButton").addEventListener("click", function (event) {
               event.preventDefault(); // Prevent the default anchor behavior
 
               // Check if COD payment option is selected
               const codPaymentOption = document.getElementById("codPayment");
-              if (!codPaymentOption.checked) {
-                alert("Please select Cash on Delivery (COD) as the payment option to proceed with checkout.");
+              const bankPaymentOption = document.getElementById("bankPayment");
+
+              if (!codPaymentOption.checked && !bankPaymentOption.checked) {
+                alert("Please select a payment option to proceed with checkout.");
                 return;
               }
 
@@ -173,23 +176,46 @@
 
               const selectedItemIds = Array.from(selectedItems).map((item) => item.dataset.itemId);
 
-              fetch("{% url 'core:checkout' %}", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "X-CSRFToken": "{{ csrf_token }}",
-                },
-                body: JSON.stringify({ item_ids: selectedItemIds }),
-              })
-                .then((response) => response.json())
-                .then((data) => {
-                  if (data.success) {
-                    window.location.href = "{% url 'core:transaction_history' %}";
-                  } else {
-                    alert("Checkout failed. Please try again.");
-                  }
+              if (bankPaymentOption.checked) {
+                // Create a Stripe Checkout session and redirect to Stripe
+                fetch("{% url 'core:create_stripe_session' %}", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}",
+                  },
+                  body: JSON.stringify({ item_ids: selectedItemIds }),
                 })
-                .catch((error) => console.error("Error:", error));
+                  .then((response) => response.json())
+                  .then((data) => {
+                    if (data.sessionId) {
+                      const stripe = Stripe("pk_test_51QDpnXF9r59i88UrLIpJ599rGFj7ptx9610P8uDEyGIiQAp52RygkKglCAO8Fj7zfi5xGemJN7UKql1IGLAD8UkQ003yLTkkdV");
+                      stripe.redirectToCheckout({ sessionId: data.sessionId });
+                    } else {
+                      alert("Failed to create Stripe session. Please try again.");
+                    }
+                  })
+                  .catch((error) => console.error("Error:", error));
+              } else {
+                // Proceed with COD checkout
+                fetch("{% url 'core:checkout' %}", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}",
+                  },
+                  body: JSON.stringify({ item_ids: selectedItemIds, payment_option: "cod" }),
+                })
+                  .then((response) => response.json())
+                  .then((data) => {
+                    if (data.success) {
+                      window.location.href = "{% url 'core:transaction_history' %}";
+                    } else {
+                      alert("Checkout failed. Please try again.");
+                    }
+                  })
+                  .catch((error) => console.error("Error:", error));
+              }
             });
           </script>
         </div>
@@ -197,7 +223,6 @@
     </div>
   </div>
 </div>
-<!-- end cart -->
 
 <!-- Notification -->
 <div
