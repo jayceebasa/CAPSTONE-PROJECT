@@ -141,11 +141,11 @@
           <div class="payment-options mt-4">
             <h4>Payment Options</h4>
             <div>
-              <input type="radio" id="gcashPayment" name="paymentOption" value="gcash" checked />
+              <input type="radio" id="gcashPayment" name="paymentOption" value="gcash" />
               <label for="gcashPayment">Gcash</label>
             </div>
             <div>
-              <input type="radio" id="codPayment" name="paymentOption" value="cod" />
+              <input type="radio" id="codPayment" name="paymentOption" value="cod" checked />
               <label for="codPayment">Cash on Delivery (COD)</label>
             </div>
           </div>
@@ -157,7 +157,20 @@
             document.getElementById("checkoutButton").addEventListener("click", function (event) {
               event.preventDefault(); // Prevent the default anchor behavior
 
+              // Check if COD payment option is selected
+              const codPaymentOption = document.getElementById("codPayment");
+              if (!codPaymentOption.checked) {
+                alert("Please select Cash on Delivery (COD) as the payment option to proceed with checkout.");
+                return;
+              }
+
+              // Check if any products are selected
               const selectedItems = document.querySelectorAll(".select-product:checked");
+              if (selectedItems.length === 0) {
+                alert("Please select at least one product to proceed with checkout.");
+                return;
+              }
+
               const selectedItemIds = Array.from(selectedItems).map((item) => item.dataset.itemId);
 
               fetch("{% url 'core:checkout' %}", {
