@@ -157,13 +157,6 @@
             document.getElementById("checkoutButton").addEventListener("click", function (event) {
               event.preventDefault(); // Prevent the default anchor behavior
 
-              // Check if COD payment option is selected
-              const codPaymentOption = document.getElementById("codPayment");
-              if (!codPaymentOption.checked) {
-                alert("Please select Cash on Delivery (COD) as the payment option to proceed with checkout.");
-                return;
-              }
-
               // Check if any products are selected
               const selectedItems = document.querySelectorAll(".select-product:checked");
               if (selectedItems.length === 0) {
@@ -173,24 +166,72 @@
 
               const selectedItemIds = Array.from(selectedItems).map((item) => item.dataset.itemId);
 
-              fetch("{% url 'core:checkout' %}", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "X-CSRFToken": "{{ csrf_token }}",
-                },
-                body: JSON.stringify({ item_ids: selectedItemIds }),
-              })
-                .then((response) => response.json())
-                .then((data) => {
-                  if (data.success) {
-                    window.location.href = "{% url 'core:transaction_history' %}";
-                  } else {
-                    alert("Checkout failed. Please try again.");
-                  }
+              // Check if Bank Payment option is selected
+              const bankPaymentOption = document.getElementById("bankPayment");
+              if (bankPaymentOption.checked) {
+                // Send data to PayMongo API
+                fetch("https://api.paymongo.com/v1/links", {
+                  method: "POST",
+                  headers: {
+                    accept: "application/json",
+                    "content-type": "application/json",
+                    authorization: "Basic c2tfdGVzdF80ajN1QlVoQnlINzZ1TWJpYlRDUkJDZXE6",
+                  },
+
+                  body: JSON.stringify({
+                    data: {
+                      attributes: {
+                        amount: calculateTotalAmount(selectedItems), // Function to calculate total amount
+                        description: "Payment for selected items",
+                        remarks: "Order #12345",
+                        redirect: {
+                          success: "{% url 'core:transaction_history' %}",
+                          failed: "{% url 'core:cart_detail' %}",
+                        },
+                      },
+                    },
+                  }),
                 })
-                .catch((error) => console.error("Error:", error));
+                  .then((response) => response.json())
+                  .then((data) => {
+                    if (data.data && data.data.attributes && data.data.attributes.checkout_url) {
+                      window.location.href = data.data.attributes.checkout_url;
+                    } else {
+                      alert("Payment initiation failed. Please try again.");
+                    }
+                  })
+                  .catch((error) => console.error("Error:", error));
+              } else {
+                // Handle COD payment option
+                fetch("{% url 'core:checkout' %}", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}",
+                  },
+                  body: JSON.stringify({ item_ids: selectedItemIds }),
+                })
+                  .then((response) => response.json())
+                  .then((data) => {
+                    if (data.success) {
+                      window.location.href = "{% url 'core:transaction_history' %}";
+                    } else {
+                      alert("Checkout failed. Please try again.");
+                    }
+                  })
+                  .catch((error) => console.error("Error:", error));
+              }
             });
+
+            function calculateTotalAmount(selectedItems) {
+              let totalAmount = 0;
+              selectedItems.forEach((item) => {
+                const itemRow = document.querySelector(`tr[data-item-id="${item.dataset.itemId}"]`);
+                const itemTotalPrice = parseFloat(itemRow.querySelector(".item-total-price").textContent);
+                totalAmount += itemTotalPrice;
+              });
+              return totalAmount * 100; // Convert to cents
+            }
           </script>
         </div>
       </div>
