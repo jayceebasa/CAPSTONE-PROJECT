@@ -58,13 +58,35 @@
                   <li class="">
                     <a href="{% url 'core:home' %}">Home</a>
                   </li>
-                  <li><a href="about.html">About</a></li>
+
                   <li><a href="{% url 'core:shop' %}">Shop</a></li>
                   <li>
                     <div class="header-icons">
-                      <a class="shopping-cart" href="{% url 'core:cart_detail' %}"><i class="fas fa-shopping-cart"></i></a>
+                      <a class="shopping-cart" href="{% url 'core:cart_detail' %}">
+                        <i class="fas fa-shopping-cart"></i>
+                        {% if cart_item_count > 0 %}
+                        <span class="cart-count">{{ cart_item_count }}</span>
+                        {% endif %}
+                      </a>
+
+                      <!-- Add some CSS to style the cart count -->
+                      <style>
+                        .shopping-cart {
+                          position: relative;
+                        }
+                        .cart-count {
+                          position: absolute;
+                          top: 5px;
+                          right: -3px;
+                          background: rgb(255, 104, 104);
+                          color: white;
+                          border-radius: 50%;
+                          padding: 2px 6px;
+                          font-size: 8px;
+                        }
+                      </style>
                       <a class="mobile-hide user-icon" href="{% url 'core:sellers' %}"><i class="fas fa-user"></i></a>
-                      <a class="notification-icon" href="#"><i class="fas fa-bell"></i></a>
+
                       <a class="logout-button" href="{% url 'core:logout' %}">Logout</a>
                     </div>
                   </li>
@@ -161,6 +183,20 @@
                       aria-controls="profile-tab-pane"
                       aria-selected="false">
                       Profile
+                    </button>
+                  </li>
+
+                  <li class="nav-item" role="presentation">
+                    <button
+                      class="nav-link"
+                      id="gcash-tab"
+                      data-bs-toggle="tab"
+                      data-bs-target="#gcash-tab-pane"
+                      type="button"
+                      role="tab"
+                      aria-controls="gcash-tab-pane"
+                      aria-selected="false">
+                      GCash
                     </button>
                   </li>
 
@@ -282,7 +318,7 @@
                   </div>
 
                   <div class="tab-pane fade" id="profile-tab-pane" role="tabpanel" aria-labelledby="profile-tab" tabindex="0">
-                    <form action="{% url 'core:update_profile' %}" method="post" class="row gy-3 gy-xxl-4">
+                    <form action="{% url 'core:update_profile' %}" method="post" enctype="multipart/form-data" class="row gy-3 gy-xxl-4">
                       {% csrf_token %}
 
                       <div class="col-12 col-md-4">
@@ -301,12 +337,62 @@
                         <label for="inputEmail" class="form-label">Email</label>
                         <input type="email" class="form-control" id="inputEmail" name="email" value="{{ user.email }}" />
                       </div>
-
+                      <div class="col-12 col-md-4">
+                        <label for="inputAddress" class="form-label">Address</label>
+                        <input type="text" class="form-control" id="inputAddress" name="address" value="{{ user.address }}" />
+                      </div>
                       <div class="col-12">
                         <button type="submit" class="btn btn-primary">Save Changes</button>
                         <input type="hidden" name="user_role" value="{{ user.role }}" />
                       </div>
                     </form>
+                  </div>
+
+                  <!-- Add the new GCash tab content -->
+                  <div class="tab-pane fade" id="gcash-tab-pane" role="tabpanel" aria-labelledby="gcash-tab" tabindex="0">
+                    <div class="col-12 col-md-4">
+                      <label for="inputGcashQr" class="form-label">GCash QR Code</label>
+                      <input type="file" class="form-control" id="inputGcashQr" name="gcash_qr" onchange="previewQRCode(event)" />
+                      <div class="qr-code-container">
+                        {% if user.qrcode %}
+                        <img id="qrCodePreview" src="{{ user.qrcode }}" alt="GCash QR Code" class="qr-code-preview" />
+                        {% else %}
+                        <img id="qrCodePreview" src="#" alt="GCash QR Code" class="qr-code-preview" style="display: none" />
+                        {% endif %}
+                      </div>
+                    </div>
+
+                    <script>
+                      function previewQRCode(event) {
+                        const qrCodePreview = document.getElementById("qrCodePreview");
+                        const file = event.target.files[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = function (e) {
+                            qrCodePreview.src = e.target.result;
+                            qrCodePreview.style.display = "block";
+                          };
+                          reader.readAsDataURL(file);
+                        } else {
+                          qrCodePreview.src = "#";
+                          qrCodePreview.style.display = "none";
+                        }
+                      }
+                    </script>
+
+                    <style>
+                      .qr-code-container {
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        margin-top: 10px;
+                      }
+
+                      .qr-code-preview {
+                        width: 300px;
+                        object-fit: cover; /* Ensures the image covers the area without stretching */
+                      }
+                    </style>
                   </div>
 
                   <!-- Edit Address Modal -->

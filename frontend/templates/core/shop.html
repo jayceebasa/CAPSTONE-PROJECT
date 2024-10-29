@@ -329,6 +329,9 @@
           },
           error: function (xhr, status, error) {
             console.error("Error adding to cart:", error);
+            // Show error notification with the specific error message from the server
+            const errorMessage = xhr.responseJSON && xhr.responseJSON.error ? xhr.responseJSON.error : "An error occurred. Please try again.";
+            $("#notification").text(errorMessage).css("background", "#dc3545").fadeIn().delay(2000).fadeOut();
           },
         });
       });

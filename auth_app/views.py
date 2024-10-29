@@ -45,6 +45,7 @@ import json
 import logging
 from django.shortcuts import render, get_object_or_404
 import random
+from django.core.files.storage import FileSystemStorage
 from django.contrib.auth.hashers import check_password
 from django.core.serializers import serialize
 from django.utils.safestring import mark_safe
@@ -53,6 +54,7 @@ from django.core.mail import send_mail
 from django.utils.crypto import get_random_string
 from django.template.loader import render_to_string
 from functools import wraps
+from django.utils.decorators import method_decorator
 from django.contrib.auth.forms import PasswordChangeForm
 from django.http import HttpResponseForbidden
 logger = logging.getLogger(__name__)
@@ -387,14 +389,39 @@ class adminUpdateUsersView(APIView):
         except User.DoesNotExist:
             return Response({'error': 'User not found'}, status=404)
         
-@api_view(['POST'])
-def add_transaction(request):
+@csrf_exempt
+@login_required
+def checkout(request):
     if request.method == 'POST':
-        serializer = TransactionSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        data = json.loads(request.body)
+        item_ids = data.get('item_ids', [])
+
+        cart = Cart.objects.get(user=request.user)
+        cart_items = CartItem.objects.filter(cart=cart, id__in=item_ids)
+
+        for item in cart_items:
+            product = item.product
+            quantity = item.quantity
+
+            # Create a transaction
+            Transaction.objects.create(
+                user=request.user,
+                product=product,
+                quantity=quantity,
+                amount=product.price * quantity,
+                status='pending'  # or 'completed' based on your logic
+            )
+
+            # Subtract the quantity from the product's stock
+            product.stock -= quantity
+            product.save()
+
+        # Clear the selected items from the cart after checkout
+        cart_items.delete()
+
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
       
 @api_view(['POST'])
 def add_product(request):
@@ -469,14 +496,22 @@ def update_profile(request):
         user.PhoneNumber = request.POST.get('PhoneNumber')
         user.email = request.POST.get('email')
         user.address = request.POST.get('address')
+        user_role = request.POST.get('user_role')
+
+        if 'gcash_qr' in request.FILES:
+            gcash_qr = request.FILES['gcash_qr']
+            fs = FileSystemStorage()
+            filename = fs.save(gcash_qr.name, gcash_qr)
+            uploaded_file_url = fs.url(filename)
+            user.qrcode = uploaded_file_url
+
         user.save()
         messages.success(request, 'Profile updated successfully')
-        user_role = request.POST.get('user_role')
-        
+
         if user_role == 'Seller':
             return redirect('/seller/')
-        else:     
-          return redirect('/users/')  # Redirect to the profile page after saving
+        else:
+            return redirect('/users/')  # Redirect to the profile page after saving
     else:
         return render(request, 'core/prof_user.html', {'user': request.user})
   
@@ -562,29 +597,36 @@ def single_product(request, id):
     related_products = random.sample(all_products, min(len(all_products), 3))
     return render(request, 'core/single-product.html', {'product': product, 'related_products': related_products})
   
+@csrf_exempt
 @login_required
 def add_to_cart(request, product_id):
     if request.method == 'POST':
-        product = get_object_or_404(Product, id=product_id)
-        quantity = int(request.POST.get('quantity', 1))
+        product = Product.objects.get(id=product_id)
+        quantity = int(request.POST.get('quantity', 1))  # Default to 1 if no quantity is provided
+        
+        if product.stock < quantity:
+            return JsonResponse({'error': 'Not enough stock available.'}, status=400)
+
         cart, created = Cart.objects.get_or_create(user=request.user)
         cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
-        
-        # Calculate the new total quantity
+
+                # Calculate the new total quantity
         new_total_quantity = cart_item.quantity + quantity if not created else quantity
         
         # Check if the new total quantity exceeds the available stock
         if new_total_quantity > product.stock:
-            return JsonResponse({'error': 'Not enough stock available'})
+            return JsonResponse({'error': 'Not enough stock available'}, status=400)
 
-        # Update the cart item quantity
-        cart_item.quantity = new_total_quantity
+        if not created:
+            cart_item.quantity += quantity
+        else:
+            cart_item.quantity = quantity
+
         cart_item.save()
-        
-        total_items = CartItem.objects.filter(cart=cart).count()
-        return JsonResponse({'total_items': total_items})
-    
-    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+        return JsonResponse({'success': True, 'total_items': cart.cartitem_set.count()})
+
+    return JsonResponse({'error': 'Invalid request method'}, status=400)
   
 @login_required
 def cart_detail(request):
@@ -709,6 +751,21 @@ def get_addresses(request):
     selected_address = request.user.address if hasattr(request.user, 'address') else ""
     return JsonResponse({'success': True, 'addresses': list(addresses), 'selectedAddress': selected_address})
   
+
+@login_required
+def save_qr_code(request):
+    if request.method == 'POST' and request.FILES['gcash_qr']:
+        gcash_qr = request.FILES['gcash_qr']
+        fs = FileSystemStorage()
+        filename = fs.save(gcash_qr.name, gcash_qr)
+        uploaded_file_url = fs.url(filename)
+        
+        # Save the file path to the user's qrcode field
+        request.user.qrcode = uploaded_file_url
+        request.user.save()
+        
+        return redirect('profile')  # Redirect to the profile page or any other page
+    return render(request, 'prof_seller.html')
   
   
 

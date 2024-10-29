@@ -58,12 +58,13 @@
     <div class="row">
       <div class="col-lg-8 col-md-12">
         <div class="cart-table-wrap">
-          {% regroup cart_items by product.seller as seller_list %} {% for seller in seller_list %}
+          {% regroup cart_items|dictsort:"product.seller.id" by product.seller as seller_list %} {% for seller in seller_list %}
           <div class="seller-section mb-4">
             <h4 class="seller-name mb-3">{{ seller.grouper.store_name }}</h4>
             <table class="cart-table">
               <thead class="cart-table-head">
                 <tr class="table-head-row">
+                  <th class="product-select"></th>
                   <th class="product-remove"></th>
                   <th class="product-seller">Seller</th>
                   <th class="product-image">Product Image</th>
@@ -75,14 +76,17 @@
                 </tr>
               </thead>
               <tbody>
-                {% for item in seller.list %}
+                {% for item in seller.list|dictsort:"id" %}
                 <tr class="table-body-row" data-item-id="{{ item.id }}" data-seller-id="{{ item.product.seller.id }}">
+                  <td class="product-select">
+                    <input type="checkbox" class="select-product" data-item-id="{{ item.id }}" data-seller-id="{{ item.product.seller.id }}" />
+                  </td>
                   <td class="product-remove">
                     <a href="#" class="remove-item" data-item-id="{{ item.id }}">
                       <i class="far fa-window-close"></i>
                     </a>
                   </td>
-                  <td class="product-seller">{{ item.product.seller}}</td>
+                  <td class="product-seller">{{ item.product.seller }}</td>
                   <td class="product-image">
                     <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" />
                   </td>
@@ -121,21 +125,114 @@
             <tbody>
               <tr class="total-data">
                 <td><strong>Subtotal: </strong></td>
-                <td>₱<span id="subtotal">{{ total_price }}</span></td>
+                <td>₱<span id="subtotal">0.00</span></td>
               </tr>
               <tr class="total-data">
                 <td><strong>Shipping: </strong></td>
-                <td>₱<span id="shipping">{{ shipping_fee }}</span></td>
+                <td>₱<span id="shipping">0.00</span></td>
               </tr>
               <tr class="total-data">
                 <td><strong>Total: </strong></td>
-                <td>₱<span id="total">{{ total_price|add:shipping_fee }}</span></td>
+                <td>₱<span id="total">0.00</span></td>
               </tr>
             </tbody>
           </table>
-          <div class="cart-buttons">
-            <a href="checkout.html" class="boxed-btn black">Check Out</a>
+          <!-- Payment Options -->
+          <div class="payment-options mt-4">
+            <h4>Payment Options</h4>
+            <div>
+              <input type="radio" id="bankPayment" name="paymentOption" value="bankPayment" />
+              <label for="bankPayment">Bank Payment</label>
+            </div>
+            <div>
+              <input type="radio" id="codPayment" name="paymentOption" value="cod" checked />
+              <label for="codPayment">Cash on Delivery (COD)</label>
+            </div>
           </div>
+          <div class="cart-buttons">
+            <a href="{% url 'core:checkout' %}" id="checkoutButton" class="boxed-btn black">Check Out</a>
+          </div>
+
+          <script>
+            document.getElementById("checkoutButton").addEventListener("click", function (event) {
+              event.preventDefault(); // Prevent the default anchor behavior
+
+              // Check if any products are selected
+              const selectedItems = document.querySelectorAll(".select-product:checked");
+              if (selectedItems.length === 0) {
+                alert("Please select at least one product to proceed with checkout.");
+                return;
+              }
+
+              const selectedItemIds = Array.from(selectedItems).map((item) => item.dataset.itemId);
+
+              // Check if Bank Payment option is selected
+              const bankPaymentOption = document.getElementById("bankPayment");
+              if (bankPaymentOption.checked) {
+                // Send data to PayMongo API
+                fetch("https://api.paymongo.com/v1/links", {
+                  method: "POST",
+                  headers: {
+                    accept: "application/json",
+                    "content-type": "application/json",
+                    authorization: "Basic c2tfdGVzdF80ajN1QlVoQnlINzZ1TWJpYlRDUkJDZXE6",
+                  },
+
+                  body: JSON.stringify({
+                    data: {
+                      attributes: {
+                        amount: calculateTotalAmount(selectedItems), // Function to calculate total amount
+                        description: "Payment for selected items",
+                        remarks: "Order #12345",
+                        redirect: {
+                          success: "{% url 'core:transaction_history' %}",
+                          failed: "{% url 'core:cart_detail' %}",
+                        },
+                      },
+                    },
+                  }),
+                })
+                  .then((response) => response.json())
+                  .then((data) => {
+                    if (data.data && data.data.attributes && data.data.attributes.checkout_url) {
+                      window.location.href = data.data.attributes.checkout_url;
+                    } else {
+                      alert("Payment initiation failed. Please try again.");
+                    }
+                  })
+                  .catch((error) => console.error("Error:", error));
+              } else {
+                // Handle COD payment option
+                fetch("{% url 'core:checkout' %}", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}",
+                  },
+                  body: JSON.stringify({ item_ids: selectedItemIds }),
+                })
+                  .then((response) => response.json())
+                  .then((data) => {
+                    if (data.success) {
+                      window.location.href = "{% url 'core:transaction_history' %}";
+                    } else {
+                      alert("Checkout failed. Please try again.");
+                    }
+                  })
+                  .catch((error) => console.error("Error:", error));
+              }
+            });
+
+            function calculateTotalAmount(selectedItems) {
+              let totalAmount = 0;
+              selectedItems.forEach((item) => {
+                const itemRow = document.querySelector(`tr[data-item-id="${item.dataset.itemId}"]`);
+                const itemTotalPrice = parseFloat(itemRow.querySelector(".item-total-price").textContent);
+                totalAmount += itemTotalPrice;
+              });
+              return totalAmount * 100; // Convert to cents
+            }
+          </script>
         </div>
       </div>
     </div>
@@ -154,6 +251,7 @@
   document.addEventListener("DOMContentLoaded", function () {
     const quantityInputs = document.querySelectorAll(".quantity-input");
     const removeButtons = document.querySelectorAll(".remove-item");
+    const selectProductCheckboxes = document.querySelectorAll(".select-product");
     let itemIdToDelete;
 
     const userLocation = "{{ user_location }}";
@@ -167,10 +265,38 @@
       shippingFee = 800;
     }
 
-    function updateTotals(data) {
-      document.getElementById("subtotal").textContent = data.total_price;
+    function updateTotals() {
+      let subtotal = 0;
+      let selectedSellerId = null;
+      let selectedItems = document.querySelectorAll(".select-product:checked");
 
-      const total = parseFloat(data.total_price) + shippingFee;
+      selectedItems.forEach((checkbox) => {
+        const itemRow = document.querySelector(`tr[data-item-id="${checkbox.dataset.itemId}"]`);
+        const itemTotalPrice = parseFloat(itemRow.querySelector(".item-total-price").textContent);
+        subtotal += itemTotalPrice;
+
+        if (selectedSellerId === null) {
+          selectedSellerId = checkbox.dataset.sellerId;
+        } else if (selectedSellerId !== checkbox.dataset.sellerId) {
+          // Uncheck all items from other sellers
+          selectedItems.forEach((cb) => {
+            if (cb.dataset.sellerId !== selectedSellerId) {
+              cb.checked = false;
+            }
+          });
+          selectedItems = document.querySelectorAll(".select-product:checked");
+          subtotal = 0;
+          selectedItems.forEach((cb) => {
+            const itemRow = document.querySelector(`tr[data-item-id="${cb.dataset.itemId}"]`);
+            const itemTotalPrice = parseFloat(itemRow.querySelector(".item-total-price").textContent);
+            subtotal += itemTotalPrice;
+          });
+          return false; // Exit the loop
+        }
+      });
+
+      const total = subtotal + shippingFee;
+      document.getElementById("subtotal").textContent = subtotal.toFixed(2);
       document.getElementById("total").textContent = total.toFixed(2);
       document.getElementById("shipping").textContent = shippingFee.toFixed(2);
     }
@@ -197,7 +323,7 @@
             } else {
               const itemRow = document.querySelector(`tr[data-item-id="${itemId}"]`);
               itemRow.querySelector(".item-total-price").textContent = data.item_total_price;
-              updateTotals(data);
+              updateTotals();
             }
           })
           .catch((error) => console.error("Error:", error));
@@ -235,7 +361,7 @@
               sellerSection.remove();
             }
 
-            updateTotals(data);
+            updateTotals();
 
             // Show notification
             $("#notification").text("Item removed from cart!").fadeIn().delay(2000).fadeOut();
@@ -245,6 +371,18 @@
         .finally(() => {
           $("#confirmDeleteModal").modal("hide");
         });
+    });
+
+    selectProductCheckboxes.forEach((checkbox) => {
+      checkbox.addEventListener("change", function () {
+        const selectedSellerId = this.dataset.sellerId;
+        selectProductCheckboxes.forEach((cb) => {
+          if (cb !== this && cb.dataset.sellerId !== selectedSellerId) {
+            cb.checked = false;
+          }
+        });
+        updateTotals();
+      });
     });
   });
 </script>

@@ -12,6 +12,7 @@ class User(AbstractUser):
     address = models.TextField(null=True)  # Address ng user
     PhoneNumber = models.CharField(max_length=255, null=True)  # Phone
     picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True, default='profile_pictures/default_profpic.png')
+    qrcode = models.ImageField(upload_to='qrcodes/', null=True, blank=True)
     role = models.CharField(max_length=50, choices=[('admin', 'Admin'), ('user', 'User'), ('Seller', 'seller')], default='User')
     email_verification_token = models.CharField(max_length=32, blank=True, null=True)  # Add this line
 
@@ -31,10 +32,11 @@ class Product(models.Model):
 class Transaction(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
     amount = models.DecimalField(max_digits=10, decimal_places=0)
     status = models.CharField(max_length=50)  # e.g., 'completed', 'pending'
     date = models.DateTimeField(auto_now_add=True)
-
+    
     def __str__(self):
         return f"{self.user.username} - {self.product.name} - {self.amount}"
 
