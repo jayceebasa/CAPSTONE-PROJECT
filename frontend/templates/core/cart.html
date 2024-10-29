@@ -141,7 +141,7 @@
           <div class="payment-options mt-4">
             <h4>Payment Options</h4>
             <div>
-              <input type="radio" id="bankPayment" name="paymentOption" value="bank" />
+              <input type="radio" id="bankPayment" name="paymentOption" value="bankPayment" />
               <label for="bankPayment">Bank Payment</label>
             </div>
             <div>
@@ -153,19 +153,9 @@
             <a href="{% url 'core:checkout' %}" id="checkoutButton" class="boxed-btn black">Check Out</a>
           </div>
 
-          <script src="https://js.stripe.com/v3/"></script>
           <script>
             document.getElementById("checkoutButton").addEventListener("click", function (event) {
               event.preventDefault(); // Prevent the default anchor behavior
-
-              // Check if COD payment option is selected
-              const codPaymentOption = document.getElementById("codPayment");
-              const bankPaymentOption = document.getElementById("bankPayment");
-
-              if (!codPaymentOption.checked && !bankPaymentOption.checked) {
-                alert("Please select a payment option to proceed with checkout.");
-                return;
-              }
 
               // Check if any products are selected
               const selectedItems = document.querySelectorAll(".select-product:checked");
@@ -176,35 +166,50 @@
 
               const selectedItemIds = Array.from(selectedItems).map((item) => item.dataset.itemId);
 
+              // Check if Bank Payment option is selected
+              const bankPaymentOption = document.getElementById("bankPayment");
               if (bankPaymentOption.checked) {
-                // Create a Stripe Checkout session and redirect to Stripe
-                fetch("{% url 'core:create_stripe_session' %}", {
+                // Send data to PayMongo API
+                fetch("https://api.paymongo.com/v1/links", {
                   method: "POST",
                   headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": "{{ csrf_token }}",
+                    accept: "application/json",
+                    "content-type": "application/json",
+                    authorization: "Basic c2tfdGVzdF80ajN1QlVoQnlINzZ1TWJpYlRDUkJDZXE6",
                   },
-                  body: JSON.stringify({ item_ids: selectedItemIds }),
+
+                  body: JSON.stringify({
+                    data: {
+                      attributes: {
+                        amount: calculateTotalAmount(selectedItems), // Function to calculate total amount
+                        description: "Payment for selected items",
+                        remarks: "Order #12345",
+                        redirect: {
+                          success: "{% url 'core:transaction_history' %}",
+                          failed: "{% url 'core:cart_detail' %}",
+                        },
+                      },
+                    },
+                  }),
                 })
                   .then((response) => response.json())
                   .then((data) => {
-                    if (data.sessionId) {
-                      const stripe = Stripe("pk_test_51QDpnXF9r59i88UrLIpJ599rGFj7ptx9610P8uDEyGIiQAp52RygkKglCAO8Fj7zfi5xGemJN7UKql1IGLAD8UkQ003yLTkkdV");
-                      stripe.redirectToCheckout({ sessionId: data.sessionId });
+                    if (data.data && data.data.attributes && data.data.attributes.checkout_url) {
+                      window.location.href = data.data.attributes.checkout_url;
                     } else {
-                      alert("Failed to create Stripe session. Please try again.");
+                      alert("Payment initiation failed. Please try again.");
                     }
                   })
                   .catch((error) => console.error("Error:", error));
               } else {
-                // Proceed with COD checkout
+                // Handle COD payment option
                 fetch("{% url 'core:checkout' %}", {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
                     "X-CSRFToken": "{{ csrf_token }}",
                   },
-                  body: JSON.stringify({ item_ids: selectedItemIds, payment_option: "cod" }),
+                  body: JSON.stringify({ item_ids: selectedItemIds }),
                 })
                   .then((response) => response.json())
                   .then((data) => {
@@ -217,12 +222,23 @@
                   .catch((error) => console.error("Error:", error));
               }
             });
+
+            function calculateTotalAmount(selectedItems) {
+              let totalAmount = 0;
+              selectedItems.forEach((item) => {
+                const itemRow = document.querySelector(`tr[data-item-id="${item.dataset.itemId}"]`);
+                const itemTotalPrice = parseFloat(itemRow.querySelector(".item-total-price").textContent);
+                totalAmount += itemTotalPrice;
+              });
+              return totalAmount * 100; // Convert to cents
+            }
           </script>
         </div>
       </div>
     </div>
   </div>
 </div>
+<!-- end cart -->
 
 <!-- Notification -->
 <div
