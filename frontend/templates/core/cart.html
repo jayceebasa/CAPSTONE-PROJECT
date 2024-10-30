@@ -153,6 +153,7 @@
             <a href="{% url 'core:checkout' %}" id="checkoutButton" class="boxed-btn black">Check Out</a>
           </div>
 
+          <script src="https://js.stripe.com/v3/"></script>
           <script>
             document.getElementById("checkoutButton").addEventListener("click", function (event) {
               event.preventDefault(); // Prevent the default anchor behavior
@@ -169,33 +170,21 @@
               // Check if Bank Payment option is selected
               const bankPaymentOption = document.getElementById("bankPayment");
               if (bankPaymentOption.checked) {
-                // Send data to PayMongo API
-                fetch("https://api.paymongo.com/v1/links", {
+                // Send data to your backend to create a Stripe Checkout session
+                fetch("{% url 'core:create_stripe_session' %}", {
                   method: "POST",
                   headers: {
-                    accept: "application/json",
-                    "content-type": "application/json",
-                    authorization: "Basic c2tfdGVzdF80ajN1QlVoQnlINzZ1TWJpYlRDUkJDZXE6",
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}",
                   },
-
-                  body: JSON.stringify({
-                    data: {
-                      attributes: {
-                        amount: calculateTotalAmount(selectedItems), // Function to calculate total amount
-                        description: "Payment for selected items",
-                        remarks: "Order #12345",
-                        redirect: {
-                          success: "{% url 'core:transaction_history' %}",
-                          failed: "{% url 'core:cart_detail' %}",
-                        },
-                      },
-                    },
-                  }),
+                  body: JSON.stringify({ item_ids: selectedItemIds }),
                 })
                   .then((response) => response.json())
                   .then((data) => {
-                    if (data.data && data.data.attributes && data.data.attributes.checkout_url) {
-                      window.location.href = data.data.attributes.checkout_url;
+                    if (data.sessionId) {
+                      // Redirect to Stripe Checkout
+                      const stripe = Stripe("pk_test_51QDpnXF9r59i88UrLIpJ599rGFj7ptx9610P8uDEyGIiQAp52RygkKglCAO8Fj7zfi5xGemJN7UKql1IGLAD8UkQ003yLTkkdV");
+                      stripe.redirectToCheckout({ sessionId: data.sessionId });
                     } else {
                       alert("Payment initiation failed. Please try again.");
                     }

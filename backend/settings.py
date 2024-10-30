@@ -38,6 +38,12 @@ EMAIL_HOST_PASSWORD = 'nntq dnne epab yrnx'
 
 # Application definition
 
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:8000',
+]
+
+# Application definition
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -53,11 +59,12 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',  # Ensure this middleware is included
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
 
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 
@@ -151,6 +158,8 @@ USE_I18N = True
 USE_TZ = True
 
 FRONTEND_URL = 'http://127.0.0.1:8000'
+
+STRIPE_WEBHOOK_SECRET = 'whsec_aa6e46134ec598cf581426a4da7ff45a462cf883d4e151075b208cdea1f3af26'
 STRIPE_SECRET_KEY = 'sk_test_51QDpnXF9r59i88UrGV3ODAqM3pyIF6dbQRs9wXAm9y29uCcDDHTftSGFW40OB6z9CHagkxu4dqkODCn4wq8Jn02H00eXqGBvdG'
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
@@ -212,3 +221,7 @@ LOGGING = {
         }
     }
 }
+
+
+SESSION_COOKIE_SAMESITE = None
+CSRF_COOKIE_SAMESITE = None

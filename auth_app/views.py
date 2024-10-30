@@ -16,6 +16,7 @@ from django.db.models import Max
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_POST
 from django.contrib.auth import login as auth_login, logout as auth_logout, authenticate
 from django.shortcuts import redirect
@@ -26,7 +27,7 @@ from django.contrib.auth.models import User
 from rest_framework import status
 from rest_framework import authentication, permissions
 from rest_framework.views import APIView
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from .forms import ProfileImageForm
 from rest_framework.decorators import api_view
 from .serializers import ProductSerializer
@@ -85,7 +86,7 @@ class Register(APIView):
             }, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
+@ensure_csrf_cookie 
 @login_required
 def index(request):
     user = request.user
@@ -394,11 +395,15 @@ class adminUpdateUsersView(APIView):
 stripe.api_key = 'sk_test_51QDpnXF9r59i88UrGV3ODAqM3pyIF6dbQRs9wXAm9y29uCcDDHTftSGFW40OB6z9CHagkxu4dqkODCn4wq8Jn02H00eXqGBvdG'
 endpoint_secret = 'whsec_aa6e46134ec598cf581426a4da7ff45a462cf883d4e151075b208cdea1f3af26'  # Replace with your webhook secret
 
+stripe.api_key = settings.STRIPE_SECRET_KEY
+
 @csrf_exempt
 def stripe_webhook(request):
     payload = request.body
-    sig_header = request.META['HTTP_STRIPE_SIGNATURE']
-    event = None
+    sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
+    endpoint_secret = settings.STRIPE_WEBHOOK_SECRET
+
+    logger.info("Received webhook event")
 
     try:
         event = stripe.Webhook.construct_event(
@@ -406,21 +411,28 @@ def stripe_webhook(request):
         )
     except ValueError as e:
         # Invalid payload
-        return JsonResponse({'status': 'invalid payload'}, status=400)
+        logger.error(f"Invalid payload: {e}")
+        return HttpResponse(status=400)
     except stripe.error.SignatureVerificationError as e:
         # Invalid signature
-        return JsonResponse({'status': 'invalid signature'}, status=400)
+        logger.error(f"Invalid signature: {e}")
+        return HttpResponse(status=400)
 
     # Handle the event
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
-        handle_successful_payment(session)
-    elif event['type'] == 'payment_method.attached':
-        payment_method = event['data']['object']
-        # Handle the event...
-    # ... handle other event types
+        logger.info(f"Handling checkout.session.completed event for session: {session['id']}")
+        try:
+            handle_successful_payment(session)
+        except Exception as e:
+            logger.error(f"Error handling successful payment: {e}")
+            return HttpResponse(status=500)
+    else:
+        logger.warning(f"Unhandled event type: {event['type']}")
 
-    return JsonResponse({'status': 'success'}, status=200)
+    return HttpResponse(status=200)
+
+
 
 def handle_successful_payment(session):
     customer_email = session['customer_email']
@@ -433,30 +445,39 @@ def handle_successful_payment(session):
     cart = Cart.objects.get(user=user)
     cart_items = CartItem.objects.filter(cart=cart)
 
-    # Create transactions for each line item
+    # Create transactions for each line item and remove the specific items from the cart
     for item in line_items['data']:
         product_name = item['description']
         quantity = item['quantity']
         amount = item['amount_total'] / 100  # Convert from cents to the original currency
 
-        # Find the product by name
-        product = Product.objects.get(name=product_name)
+        try:
+            # Find the product by name
+            product = Product.objects.get(name=product_name)
 
-        # Create a transaction
-        Transaction.objects.create(
-            user=user,
-            product=product,
-            quantity=quantity,
-            amount=amount,
-            status='completed'
-        )
+            # Create a transaction
+            Transaction.objects.create(
+                user=user,
+                product=product,
+                quantity=quantity,
+                amount=amount,
+                status='completed'
+            )
 
-        # Subtract the quantity from the product's stock
-        product.stock -= quantity
-        product.save()
+            # Subtract the quantity from the product's stock
+            product.stock -= quantity
+            product.save()
 
-    # Clear the selected items from the cart after checkout
-    cart_items.delete()
+            # Remove the specific item from the cart
+            cart_item = cart_items.get(product=product)
+            cart_item.delete()
+        except Product.DoesNotExist:
+            logger.error(f"Product matching query does not exist: {product_name}")
+            continue
+        except CartItem.DoesNotExist:
+            logger.error(f"Cart item matching query does not exist: {product_name}")
+            continue
+
 
 @csrf_exempt
 @login_required
