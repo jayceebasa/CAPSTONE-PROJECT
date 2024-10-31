@@ -785,11 +785,11 @@
                             <span aria-hidden="true">&laquo;</span>
                           </a>
                         </li>
-                        {% endif %} {% for num in transactions.paginator.page_range %} {% if transactions.number == num %}
-                        <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
-                        {% elif num > transactions.number|add:'-3' and num < transactions.number|add:'3' %}
-                        <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
-                        {% endif %} {% endfor %} {% if transactions.has_next %}
+                        {% endif %} {% for num in transactions.paginator.page_range %}
+                        <li class="page-item {% if transactions.number == num %}active{% endif %}">
+                          <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                        {% endfor %} {% if transactions.has_next %}
                         <li class="page-item">
                           <a class="page-link" href="?page={{ transactions.next_page_number }}" aria-label="Next">
                             <span aria-hidden="true">&raquo;</span>
@@ -814,10 +814,12 @@
     </section>
     <script>
       document.addEventListener("DOMContentLoaded", function () {
-        document.getElementById("paginationContainer").addEventListener("click", function (event) {
-          if (event.target.tagName === "A" && event.target.classList.contains("page-link")) {
+        const paginationLinks = document.querySelectorAll("#paginationContainer .page-link");
+
+        paginationLinks.forEach((link) => {
+          link.addEventListener("click", function (event) {
             event.preventDefault();
-            const url = event.target.getAttribute("href");
+            const url = this.getAttribute("href");
 
             fetch(url, {
               headers: {
@@ -828,14 +830,36 @@
               .then((data) => {
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(data, "text/html");
-                const newTableBody = doc.querySelector("tbody").innerHTML;
-                const newPagination = doc.getElementById("paginationContainer").innerHTML;
+                const newTableBody = doc.querySelector("tbody");
+                const newPagination = doc.querySelector("#paginationContainer");
 
-                document.querySelector("tbody").innerHTML = newTableBody;
-                document.getElementById("paginationContainer").innerHTML = newPagination;
-              })
-              .catch((error) => console.error("Error fetching page:", error));
-          }
+                document.querySelector("tbody").innerHTML = newTableBody.innerHTML;
+                document.querySelector("#paginationContainer").innerHTML = newPagination.innerHTML;
+
+                // Re-attach event listeners to new pagination links
+                const newPaginationLinks = document.querySelectorAll("#paginationContainer .page-link");
+                newPaginationLinks.forEach((newLink) => {
+                  newLink.addEventListener("click", function (event) {
+                    event.preventDefault();
+                    const newUrl = this.getAttribute("href");
+                    fetch(newUrl, {
+                      headers: {
+                        "X-Requested-With": "XMLHttpRequest",
+                      },
+                    })
+                      .then((response) => response.text())
+                      .then((newData) => {
+                        const newDoc = parser.parseFromString(newData, "text/html");
+                        const updatedTableBody = newDoc.querySelector("tbody");
+                        const updatedPagination = newDoc.querySelector("#paginationContainer");
+
+                        document.querySelector("tbody").innerHTML = updatedTableBody.innerHTML;
+                        document.querySelector("#paginationContainer").innerHTML = updatedPagination.innerHTML;
+                      });
+                  });
+                });
+              });
+          });
         });
       });
     </script>
