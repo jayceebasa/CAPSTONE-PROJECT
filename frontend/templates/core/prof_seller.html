@@ -1231,15 +1231,17 @@
                             <td>
                               {% if transaction.status != 'In transit' and transaction.status != 'Delivered' %}
                               <div class="btn-group" role="group">
-                                <button class="btn btn-sm btn-primary change-status-btn" data-transaction-id="{{ transaction.id }}">In transit</button>
+                                <button class="btn btn-sm btn-primary change-status-btn no-wrap" data-transaction-id="{{ transaction.id }}">In transit</button>
+                                {% if transaction.proof_of_payment %}
                                 <button
                                   type="button"
-                                  class="btn btn-sm btn-info"
+                                  class="btn btn-sm btn-info no-wrap"
                                   data-bs-toggle="modal"
                                   data-bs-target="#proofOfPaymentModal"
                                   onclick="fetchProofOfPayment('{{ transaction.id }}')">
                                   View Receipt
                                 </button>
+                                {% endif %}
                               </div>
                               {% endif %}
                             </td>
@@ -1248,6 +1250,13 @@
                         </tbody>
                       </table>
                     </div>
+
+                    <style>
+                      .no-wrap {
+                        white-space: nowrap;
+                        min-width: 100px; /* Adjust the width as needed */
+                      }
+                    </style>
 
                     <!-- Pagination Controls for Orders -->
                     <nav aria-label="Page navigation">
