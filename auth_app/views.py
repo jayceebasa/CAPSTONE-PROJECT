@@ -545,6 +545,42 @@ def checkout(request):
         return JsonResponse({'success': False, 'error': 'Missing item_ids or proof_of_payment'})
 
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+      
+@csrf_exempt
+@login_required
+def checkout_cod(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        item_ids = data.get('item_ids', [])
+
+        cart = Cart.objects.get(user=request.user)
+        cart_items = CartItem.objects.filter(cart=cart, id__in=item_ids)
+
+
+        for item in cart_items:
+            product = item.product
+            quantity = item.quantity
+
+            # Create a transaction
+            Transaction.objects.create(
+                user=request.user,
+                product=product,
+                quantity=quantity,
+                amount=product.price * quantity,
+                status='pending'  # or 'completed' based on your logic
+            )
+
+            # Subtract the quantity from the product's stock
+            product.stock -= quantity
+            product.save()
+
+        # Clear the selected items from the cart after checkout
+        cart_items.delete()
+
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})      
       
 @api_view(['POST'])
 def add_product(request):

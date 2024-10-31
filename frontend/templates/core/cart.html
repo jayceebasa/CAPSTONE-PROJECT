@@ -32,7 +32,7 @@
       <div class="modal-body">
         <p>Please scan the QR code below to complete your payment.</p>
         <img id="gcashQrCode" src="{% static 'images/gcash-qr-code.png' %}" alt="GCash QR Code" class="img-fluid" />
-        <p class="mt-3">Amount to be paid: ₱<span id="gcashAmount">0.00</span></p>
+        <p class="mt-3"><strong>Amount to be paid: <u>₱<span id="gcashAmount">0.00</span></u></strong></p>
         <div class="form-group">
           <label for="proofOfPayment">Proof of Payment</label>
           <input type="file" class="form-control-file" id="proofOfPayment" accept="image/*" />
@@ -250,45 +250,51 @@
               const paymentOption = document.querySelector('input[name="paymentOption"]:checked').value;
 
               if (paymentOption === "cod") {
-                // Handle COD payment option
-                fetch("{% url 'core:checkout' %}", {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": "{{ csrf_token }}",
-                  },
-                  body: JSON.stringify({ item_ids: selectedItemIds }),
-                })
-                  .then((response) => response.json())
-                  .then((data) => {
-                    if (data.success) {
-                      window.location.href = "{% url 'core:transaction_history' %}";
-                    } else {
-                      alert("Checkout failed. Please try again.");
-                    }
-                  })
-                  .catch((error) => console.error("Error:", error));
+                handleCodPayment(selectedItemIds);
               } else if (paymentOption === "gcash") {
-                // Fetch the seller's QR code URL
-                const sellerId = selectedItems[0].dataset.sellerId;
-                fetch(`/get_seller_qrcode/${sellerId}/`)
-                  .then((response) => response.json())
-                  .then((data) => {
-                    if (data.success) {
-                      document.getElementById("gcashQrCode").src = data.qrcode_url;
-
-                      // Calculate the total amount to be paid
-                      const totalAmount = calculateTotalAmount(selectedItems) / 100; // Convert back to currency format
-                      document.getElementById("gcashAmount").textContent = totalAmount.toFixed(2);
-
-                      $("#gcashModal").modal("show");
-                    } else {
-                      alert("Failed to fetch seller's QR code. Please try again.");
-                    }
-                  })
-                  .catch((error) => console.error("Error:", error));
+                handleGcashPayment(selectedItems);
               }
             });
+
+            function handleCodPayment(selectedItemIds) {
+              fetch("{% url 'core:checkout_cod' %}", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "X-CSRFToken": "{{ csrf_token }}",
+                },
+                body: JSON.stringify({ item_ids: selectedItemIds }),
+              })
+                .then((response) => response.json())
+                .then((data) => {
+                  if (data.success) {
+                    window.location.href = "{% url 'core:transaction_history' %}";
+                  } else {
+                    alert("Checkout failed. Please try again.");
+                  }
+                })
+                .catch((error) => console.error("Error:", error));
+            }
+
+            function handleGcashPayment(selectedItems) {
+              const sellerId = selectedItems[0].dataset.sellerId;
+              fetch(`/get_seller_qrcode/${sellerId}/`)
+                .then((response) => response.json())
+                .then((data) => {
+                  if (data.success) {
+                    document.getElementById("gcashQrCode").src = data.qrcode_url;
+
+                    // Calculate the total amount to be paid
+                    const totalAmount = calculateTotalAmount(selectedItems) / 100; // Convert back to currency format
+                    document.getElementById("gcashAmount").textContent = totalAmount.toFixed(2);
+
+                    $("#gcashModal").modal("show");
+                  } else {
+                    alert("Failed to fetch seller's QR code. Please try again.");
+                  }
+                })
+                .catch((error) => console.error("Error:", error));
+            }
 
             function calculateTotalAmount(selectedItems) {
               let totalAmount = 0;
