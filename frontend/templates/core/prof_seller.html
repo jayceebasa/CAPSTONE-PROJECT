@@ -351,15 +351,19 @@
                   <!-- Add the new GCash tab content -->
                   <div class="tab-pane fade" id="gcash-tab-pane" role="tabpanel" aria-labelledby="gcash-tab" tabindex="0">
                     <div class="col-12 col-md-4">
-                      <label for="inputGcashQr" class="form-label">GCash QR Code</label>
-                      <input type="file" class="form-control" id="inputGcashQr" name="gcash_qr" onchange="previewQRCode(event)" />
-                      <div class="qr-code-container">
-                        {% if user.qrcode %}
-                        <img id="qrCodePreview" src="{{ user.qrcode }}" alt="GCash QR Code" class="qr-code-preview" />
-                        {% else %}
-                        <img id="qrCodePreview" src="#" alt="GCash QR Code" class="qr-code-preview" style="display: none" />
-                        {% endif %}
-                      </div>
+                      <form id="qrCodeForm" method="POST" enctype="multipart/form-data" action="{% url 'core:save_qr_code' %}">
+                        {% csrf_token %}
+                        <label for="qrCodeInput">Upload QR Code:</label>
+                        <input type="file" id="qrCodeInput" name="qrcode" accept="image/*" onchange="previewQRCode(event)" />
+                        <div class="qr-code-container">
+                          <img
+                            id="qrCodePreview"
+                            src="{% if user.qrcode %}{{ user.qrcode.url }}{% else %}# {% endif %}"
+                            alt="QR Code Preview"
+                            class="{% if user.qrcode %}qr-code-visible{% else %}qr-code-hidden{% endif %}" style="max-width: 200px; max-height: 200px;" />
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save QR Code</button>
+                      </form>
                     </div>
 
                     <script>
@@ -391,6 +395,14 @@
                       .qr-code-preview {
                         width: 300px;
                         object-fit: cover; /* Ensures the image covers the area without stretching */
+                      }
+
+                      .qr-code-visible {
+                        display: block;
+                      }
+
+                      .qr-code-hidden {
+                        display: none;
                       }
                     </style>
                   </div>

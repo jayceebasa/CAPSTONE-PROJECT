@@ -19,6 +19,37 @@
   </div>
 </div>
 
+<!-- GCash Modal -->
+<div class="modal fade" id="gcashModal" tabindex="-1" role="dialog" aria-labelledby="gcashModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="gcashModalLabel">GCash Payment</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>Please scan the QR code below to complete your payment.</p>
+        <img id="gcashQrCode" src="{% static 'images/gcash-qr-code.png' %}" alt="GCash QR Code" class="img-fluid" />
+        <p class="mt-3">Amount to be paid: ₱<span id="gcashAmount">0.00</span></p>
+        <div class="form-group">
+          <label for="proofOfPayment">Proof of Payment</label>
+          <input type="file" class="form-control-file" id="proofOfPayment" accept="image/*" />
+        </div>
+        <div class="form-group">
+          <label for="proofOfPaymentPreview">Preview:</label>
+          <img id="proofOfPaymentPreview" src="#" alt="Proof of Payment Preview" class="img-fluid" style="display: none" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="gcashCheckoutButton">Checkout</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- search area -->
 <div class="search-area">
   <div class="container">
@@ -140,10 +171,12 @@
           <!-- Payment Options -->
           <div class="payment-options mt-4">
             <h4>Payment Options</h4>
+
             <div>
-              <input type="radio" id="bankPayment" name="paymentOption" value="bankPayment" />
-              <label for="bankPayment">Bank Payment</label>
+              <input type="radio" id="gcashPayment" name="paymentOption" value="gcash" />
+              <label for="gcashPayment">GCash</label>
             </div>
+
             <div>
               <input type="radio" id="codPayment" name="paymentOption" value="cod" checked />
               <label for="codPayment">Cash on Delivery (COD)</label>
@@ -166,42 +199,10 @@
 
               const selectedItemIds = Array.from(selectedItems).map((item) => item.dataset.itemId);
 
-              // Check if Bank Payment option is selected
-              const bankPaymentOption = document.getElementById("bankPayment");
-              if (bankPaymentOption.checked) {
-                // Send data to PayMongo API
-                fetch("https://api.paymongo.com/v1/links", {
-                  method: "POST",
-                  headers: {
-                    accept: "application/json",
-                    "content-type": "application/json",
-                    authorization: "Basic c2tfdGVzdF80ajN1QlVoQnlINzZ1TWJpYlRDUkJDZXE6",
-                  },
+              // Check the selected payment option
+              const paymentOption = document.querySelector('input[name="paymentOption"]:checked').value;
 
-                  body: JSON.stringify({
-                    data: {
-                      attributes: {
-                        amount: calculateTotalAmount(selectedItems), // Function to calculate total amount
-                        description: "Payment for selected items",
-                        remarks: "Order #12345",
-                        redirect: {
-                          success: "{% url 'core:transaction_history' %}",
-                          failed: "{% url 'core:cart_detail' %}",
-                        },
-                      },
-                    },
-                  }),
-                })
-                  .then((response) => response.json())
-                  .then((data) => {
-                    if (data.data && data.data.attributes && data.data.attributes.checkout_url) {
-                      window.location.href = data.data.attributes.checkout_url;
-                    } else {
-                      alert("Payment initiation failed. Please try again.");
-                    }
-                  })
-                  .catch((error) => console.error("Error:", error));
-              } else {
+              if (paymentOption === "cod") {
                 // Handle COD payment option
                 fetch("{% url 'core:checkout' %}", {
                   method: "POST",
@@ -217,6 +218,25 @@
                       window.location.href = "{% url 'core:transaction_history' %}";
                     } else {
                       alert("Checkout failed. Please try again.");
+                    }
+                  })
+                  .catch((error) => console.error("Error:", error));
+              } else if (paymentOption === "gcash") {
+                // Fetch the seller's QR code URL
+                const sellerId = selectedItems[0].dataset.sellerId;
+                fetch(`/get_seller_qrcode/${sellerId}/`)
+                  .then((response) => response.json())
+                  .then((data) => {
+                    if (data.success) {
+                      document.getElementById("gcashQrCode").src = data.qrcode_url;
+
+                      // Calculate the total amount to be paid
+                      const totalAmount = calculateTotalAmount(selectedItems) / 100; // Convert back to currency format
+                      document.getElementById("gcashAmount").textContent = totalAmount.toFixed(2);
+
+                      $("#gcashModal").modal("show");
+                    } else {
+                      alert("Failed to fetch seller's QR code. Please try again.");
                     }
                   })
                   .catch((error) => console.error("Error:", error));

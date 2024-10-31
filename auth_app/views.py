@@ -506,22 +506,10 @@ def checkout(request):
     if request.method == 'POST':
         data = json.loads(request.body)
         item_ids = data.get('item_ids', [])
-        payment_option = data.get('payment_option', 'cod')
-        stripe_token = data.get('stripeToken', None)
 
         cart = Cart.objects.get(user=request.user)
         cart_items = CartItem.objects.filter(cart=cart, id__in=item_ids)
 
-        if payment_option == 'bank' and stripe_token:
-            try:
-                charge = stripe.Charge.create(
-                    amount=int(cart_items.aggregate(Sum('product__price'))['product__price__sum'] * 100),  # Amount in cents
-                    currency='php',
-                    source=stripe_token,
-                    description='Bank Payment'
-                )
-            except stripe.error.StripeError as e:
-                return JsonResponse({'success': False, 'error': str(e)})
 
         for item in cart_items:
             product = item.product
@@ -878,20 +866,24 @@ def get_addresses(request):
 
 @login_required
 def save_qr_code(request):
-    if request.method == 'POST' and request.FILES['gcash_qr']:
-        gcash_qr = request.FILES['gcash_qr']
-        fs = FileSystemStorage()
-        filename = fs.save(gcash_qr.name, gcash_qr)
-        uploaded_file_url = fs.url(filename)
-        
-        # Save the file path to the user's qrcode field
-        request.user.qrcode = uploaded_file_url
-        request.user.save()
-        
-        return redirect('profile')  # Redirect to the profile page or any other page
-    return render(request, 'prof_seller.html')
+    if request.method == 'POST' and request.FILES.get('qrcode'):
+        qrcode = request.FILES['qrcode']
+        user = request.user
+        user.qrcode = qrcode
+        user.save()
+    return render(request, 'core/prof_seller.html')
   
-  
+@login_required
+def get_seller_qrcode(request, seller_id):
+    try:
+        seller = User.objects.get(id=seller_id)
+        qrcode_url = seller.qrcode.url if seller.qrcode else None
+        if qrcode_url:
+            return JsonResponse({'success': True, 'qrcode_url': qrcode_url})
+        else:
+            return JsonResponse({'success': False, 'error': 'QR code not found'})
+    except User.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Seller not found'}) 
 
 #<========ADMIN VIEWS===========>
 

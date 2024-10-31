@@ -52,4 +52,5 @@ urlpatterns = [
     path('checkout/', views.checkout, name='checkout'),
     path('api/webhook/', views.stripe_webhook, name='stripe_webhook'),
     path('create-stripe-session/', views.create_stripe_session, name='create_stripe_session'),
+    path('get_seller_qrcode/<int:seller_id>/', views.get_seller_qrcode, name='get_seller_qrcode'),
 ]
