@@ -771,7 +771,7 @@
                       </table>
                     </div>
                     <!-- Pagination Controls -->
-                    <nav aria-label="Page navigation">
+                    <nav aria-label="Page navigation" id="paginationContainer">
                       <ul class="pagination justify-content-center">
                         {% if transactions.has_previous %}
                         <li class="page-item">
@@ -812,7 +812,33 @@
         </div>
       </div>
     </section>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        document.getElementById("paginationContainer").addEventListener("click", function (event) {
+          if (event.target.tagName === "A" && event.target.classList.contains("page-link")) {
+            event.preventDefault();
+            const url = event.target.getAttribute("href");
 
+            fetch(url, {
+              headers: {
+                "X-Requested-With": "XMLHttpRequest",
+              },
+            })
+              .then((response) => response.text())
+              .then((data) => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(data, "text/html");
+                const newTableBody = doc.querySelector("tbody").innerHTML;
+                const newPagination = doc.getElementById("paginationContainer").innerHTML;
+
+                document.querySelector("tbody").innerHTML = newTableBody;
+                document.getElementById("paginationContainer").innerHTML = newPagination;
+              })
+              .catch((error) => console.error("Error fetching page:", error));
+          }
+        });
+      });
+    </script>
     <!-- footer -->
     <div class="footer-area" style="margin-top: 1000px !important; bottom: 0 !important; width: 100% !important; padding: 10px !important; height: 25%">
       <div class="container">
