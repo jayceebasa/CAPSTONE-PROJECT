@@ -360,7 +360,8 @@
                             id="qrCodePreview"
                             src="{% if user.qrcode %}{{ user.qrcode.url }}{% else %}# {% endif %}"
                             alt="QR Code Preview"
-                            class="{% if user.qrcode %}qr-code-visible{% else %}qr-code-hidden{% endif %}" style="max-width: 200px; max-height: 200px;" />
+                            class="{% if user.qrcode %}qr-code-visible{% else %}qr-code-hidden{% endif %}"
+                            style="max-width: 200px; max-height: 200px" />
                         </div>
                         <button type="submit" class="btn btn-primary">Save QR Code</button>
                       </form>
@@ -1229,7 +1230,17 @@
                             <td>{{ transaction.status }}</td>
                             <td>
                               {% if transaction.status != 'In transit' and transaction.status != 'Delivered' %}
-                              <button class="btn btn-sm btn-primary change-status-btn" data-transaction-id="{{ transaction.id }}">In transit</button>
+                              <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-primary change-status-btn" data-transaction-id="{{ transaction.id }}">In transit</button>
+                                <button
+                                  type="button"
+                                  class="btn btn-sm btn-info"
+                                  data-bs-toggle="modal"
+                                  data-bs-target="#proofOfPaymentModal"
+                                  onclick="fetchProofOfPayment('{{ transaction.id }}')">
+                                  View Receipt
+                                </button>
+                              </div>
                               {% endif %}
                             </td>
                           </tr>
@@ -1536,5 +1547,44 @@
       });
     </script>
     <script src="{%static 'assets/js/prof_seller.js'%}"></script>
+
+    <!-- Add the modal for displaying the proof of payment -->
+    <div class="modal fade" id="proofOfPaymentModal" tabindex="-1" aria-labelledby="proofOfPaymentModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="proofOfPaymentModalLabel">Proof of Payment</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <img id="proofOfPaymentImage" src="" alt="Proof of Payment" class="img-fluid" />
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function handleProofOfPaymentClick(element) {
+        const transactionId = element.getAttribute("data-transaction-id");
+        fetchProofOfPayment(transactionId);
+      }
+
+      function fetchProofOfPayment(transactionId) {
+        fetch(`/get-proof-of-payment/${transactionId}/`)
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.proof_of_payment_url) {
+              document.getElementById("proofOfPaymentImage").src = data.proof_of_payment_url;
+            } else {
+              document.getElementById("proofOfPaymentImage").src = "";
+              alert("No proof of payment available for this transaction.");
+            }
+          })
+          .catch((error) => console.error("Error fetching proof of payment:", error));
+      }
+    </script>
   </body>
 </html>

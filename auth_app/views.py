@@ -514,10 +514,10 @@ def checkout(request):
             cart = Cart.objects.get(user=request.user)
             cart_items = CartItem.objects.filter(cart=cart, id__in=item_ids)
 
-            # Save the proof of payment file
+  # Save the proof of payment file in the correct subdirectory
             fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, 'proof_of_payment'))
             filename = fs.save(proof_of_payment.name, proof_of_payment)
-            file_url = fs.url(filename)
+            file_url = os.path.join('proof_of_payment', filename)
 
             for item in cart_items:
                 product = item.product
@@ -581,6 +581,12 @@ def checkout_cod(request):
         return JsonResponse({'success': True})
 
     return JsonResponse({'success': False, 'error': 'Invalid request method'})      
+
+@login_required
+def get_proof_of_payment(request, transaction_id):
+    transaction = get_object_or_404(Transaction, id=transaction_id, product__seller=request.user)
+    proof_of_payment_url = transaction.proof_of_payment.url if transaction.proof_of_payment else None
+    return JsonResponse({'proof_of_payment_url': proof_of_payment_url})
       
 @api_view(['POST'])
 def add_product(request):
