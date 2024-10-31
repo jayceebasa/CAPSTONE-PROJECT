@@ -12,6 +12,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.response import Response
 from rest_framework import status
 import stripe
+import os
 from django.db.models import Max
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import render
@@ -504,34 +505,44 @@ def create_stripe_session(request):
 @login_required
 def checkout(request):
     if request.method == 'POST':
-        data = json.loads(request.body)
-        item_ids = data.get('item_ids', [])
+        item_ids = request.POST.get("item_ids")
+        proof_of_payment = request.FILES.get("proof_of_payment")
 
-        cart = Cart.objects.get(user=request.user)
-        cart_items = CartItem.objects.filter(cart=cart, id__in=item_ids)
+        if item_ids and proof_of_payment:
+            item_ids = json.loads(item_ids)
 
+            cart = Cart.objects.get(user=request.user)
+            cart_items = CartItem.objects.filter(cart=cart, id__in=item_ids)
 
-        for item in cart_items:
-            product = item.product
-            quantity = item.quantity
+            # Save the proof of payment file
+            fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, 'proof_of_payment'))
+            filename = fs.save(proof_of_payment.name, proof_of_payment)
+            file_url = fs.url(filename)
 
-            # Create a transaction
-            Transaction.objects.create(
-                user=request.user,
-                product=product,
-                quantity=quantity,
-                amount=product.price * quantity,
-                status='pending'  # or 'completed' based on your logic
-            )
+            for item in cart_items:
+                product = item.product
+                quantity = item.quantity
 
-            # Subtract the quantity from the product's stock
-            product.stock -= quantity
-            product.save()
+                # Create a transaction
+                Transaction.objects.create(
+                    user=request.user,
+                    product=product,
+                    quantity=quantity,
+                    amount=product.price * quantity,
+                    status='pending',  # or 'completed' based on your logic
+                    proof_of_payment=file_url
+                )
 
-        # Clear the selected items from the cart after checkout
-        cart_items.delete()
+                # Subtract the quantity from the product's stock
+                product.stock -= quantity
+                product.save()
 
-        return JsonResponse({'success': True})
+            # Clear the selected items from the cart after checkout
+            cart_items.delete()
+
+            return JsonResponse({'success': True})
+
+        return JsonResponse({'success': False, 'error': 'Missing item_ids or proof_of_payment'})
 
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
       

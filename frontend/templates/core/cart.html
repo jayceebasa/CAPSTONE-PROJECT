@@ -68,6 +68,33 @@
         proofOfPaymentPreview.style.display = "none";
       }
     });
+
+    document.getElementById("gcashCheckoutButton").addEventListener("click", function () {
+      const selectedItems = document.querySelectorAll(".select-product:checked");
+      const selectedItemIds = Array.from(selectedItems).map((item) => item.dataset.itemId);
+      const proofOfPaymentFile = proofOfPaymentInput.files[0];
+
+      const formData = new FormData();
+      formData.append("item_ids", JSON.stringify(selectedItemIds));
+      formData.append("proof_of_payment", proofOfPaymentFile);
+
+      fetch("{% url 'core:checkout' %}", {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": "{{ csrf_token }}",
+        },
+        body: formData,
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            window.location.href = "{% url 'core:transaction_history' %}";
+          } else {
+            alert("Checkout failed. Please try again.");
+          }
+        })
+        .catch((error) => console.error("Error:", error));
+    });
   });
 </script>
 <!-- search area -->
