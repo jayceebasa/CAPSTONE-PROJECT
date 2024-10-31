@@ -49,7 +49,27 @@
     </div>
   </div>
 </div>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const proofOfPaymentInput = document.getElementById("proofOfPayment");
+    const proofOfPaymentPreview = document.getElementById("proofOfPaymentPreview");
 
+    proofOfPaymentInput.addEventListener("change", function () {
+      const file = this.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          proofOfPaymentPreview.src = e.target.result;
+          proofOfPaymentPreview.style.display = "block";
+        };
+        reader.readAsDataURL(file);
+      } else {
+        proofOfPaymentPreview.src = "#";
+        proofOfPaymentPreview.style.display = "none";
+      }
+    });
+  });
+</script>
 <!-- search area -->
 <div class="search-area">
   <div class="container">
@@ -250,6 +270,7 @@
                 const itemTotalPrice = parseFloat(itemRow.querySelector(".item-total-price").textContent);
                 totalAmount += itemTotalPrice;
               });
+              totalAmount += parseFloat(document.getElementById("shipping").textContent); // Include shipping fee
               return totalAmount * 100; // Convert to cents
             }
           </script>
