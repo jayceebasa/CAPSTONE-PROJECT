@@ -7,10 +7,12 @@ document.addEventListener("DOMContentLoaded", function () {
   const dashboardLink = document.getElementById("dashboard-link");
   const ordersLink = document.getElementById("orders-link");
   const userManagementLink = document.getElementById("user-management-link");
+  const subscriptionsLink = document.getElementById("subscriptions-link"); // Added
   const profileLink = document.getElementById("profile-link");
   const dashboardView = document.getElementById("dashboard-view");
   const ordersView = document.getElementById("orders-view");
   const userManagementView = document.getElementById("user-management-view");
+  const subscriptionsView = document.getElementById("subscriptions-view"); // Added
   const profileView = document.getElementById("profile-view");
   let myChart;
 
@@ -219,7 +221,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Function to show a specific view
   function showView(view) {
-    [dashboardView, ordersView, userManagementView, profileView].forEach((v) => (v.style.display = "none"));
+    [dashboardView, ordersView, userManagementView, subscriptionsView, profileView].forEach((v) => (v.style.display = "none")); // Added subscriptionsView
     view.style.display = "block";
   }
 
@@ -247,6 +249,7 @@ document.addEventListener("DOMContentLoaded", function () {
     { link: dashboardLink, view: dashboardView },
     { link: ordersLink, view: ordersView },
     { link: userManagementLink, view: userManagementView },
+    { link: subscriptionsLink, view: subscriptionsView }, // Added
     { link: profileLink, view: profileView },
   ];
 
@@ -371,7 +374,6 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     });
   }
-
 
   // Initial call to attach event listeners
   attachPaginationEventListeners();

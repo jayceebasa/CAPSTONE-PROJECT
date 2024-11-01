@@ -1127,3 +1127,22 @@ def shop_pagination(request):
 
     # Render the products to the template as a partial
     return render(request, 'partials/product_list.html', {'products': paginated_products})
+  
+@csrf_exempt
+def accept_subscription(request, user_id):
+    if request.method == "POST":
+        user = get_object_or_404(User, id=user_id)
+        user.is_subscribed = True
+        user.subscription_payment = None
+        user.save()
+        return JsonResponse({"success": True})
+    return JsonResponse({"success": False, "message": "Invalid request method"}, status=400)
+
+@csrf_exempt
+def cancel_subscription(request, user_id):
+    if request.method == "POST":
+        user = get_object_or_404(User, id=user_id)
+        user.subscription_payment = None
+        user.save()
+        return JsonResponse({"success": True})
+    return JsonResponse({"success": False, "message": "Invalid request method"}, status=400)

@@ -232,6 +232,13 @@
                     User Management
                   </a>
                 </li>
+
+                <li class="nav-item">
+                  <a class="nav-link d-flex align-items-center gap-2" href="#" id="subscriptions-link">
+                    <svg class="bi"><use xlink:href="#puzzle"></use></svg>
+                    Subscriptions
+                  </a>
+                </li>
               </ul>
 
               <hr class="my-3" />
@@ -552,6 +559,114 @@
             }
           </script>
           <!--------------------------- END User Management ------------------------>
+
+          <!-------------------- Subscriptions Tab ---------------------->
+
+          <div id="subscriptions-view" style="display: none">
+            <h1 class="h2">SUBSCRIPTIONS</h1>
+            <div class="row" id="subscriptions-container">
+              {% for user in users %} {% if user.subscription_payment %}
+              <div class="col-md-4">
+                <div class="card mb-4">
+                  <div class="card-body">
+                    <h5 class="card-title">Seller: {{ user.username }}</h5>
+                    <p class="card-text"><strong>Subscription Payment:</strong></p>
+                    <div class="d-flex justify-content-center">
+                      <img src="{{ user.subscription_payment.url }}" style="max-width: 250px" />
+                    </div>
+                    <div class="d-flex justify-content-center mt-2">
+                      <button class="btn btn-success accept-btn me-2" data-user-id="{{ user.id }}">Accept</button>
+                      <button class="btn btn-danger cancel-btn" data-user-id="{{ user.id }}">Cancel</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {% endif %} {% endfor %}
+            </div>
+          </div>
+
+          <script>
+            document.addEventListener("DOMContentLoaded", function () {
+              // Event listener for Accept buttons
+              document.querySelectorAll(".accept-btn").forEach((button) => {
+                button.addEventListener("click", function () {
+                  const userId = this.getAttribute("data-user-id");
+                  // Send an AJAX request to update the subscription status
+                  fetch(`/api/accept-subscription/${userId}/`, {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      "X-CSRFToken": getCookie("csrftoken"),
+                    },
+                  })
+                    .then((response) => response.json())
+                    .then((data) => {
+                      if (data.success) {
+                        // Update the UI to reflect the changes
+                        const card = this.closest(".card");
+                        card.querySelector("img").remove();
+                        card.querySelector(".accept-btn").remove();
+                        card.querySelector(".cancel-btn").remove();
+                        card.querySelector(".card-text").innerHTML = "<strong>Subscription Accepted</strong>";
+                      } else {
+                        console.error("Failed to accept subscription:", data.message);
+                      }
+                    })
+                    .catch((error) => {
+                      console.error("Error:", error);
+                    });
+                });
+              });
+
+              // Event listener for Cancel buttons
+              document.querySelectorAll(".cancel-btn").forEach((button) => {
+                button.addEventListener("click", function () {
+                  const userId = this.getAttribute("data-user-id");
+                  // Send an AJAX request to update the subscription payment to null
+                  fetch(`/api/cancel-subscription/${userId}/`, {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      "X-CSRFToken": getCookie("csrftoken"),
+                    },
+                  })
+                    .then((response) => response.json())
+                    .then((data) => {
+                      if (data.success) {
+                        // Update the UI to reflect the changes
+                        const card = this.closest(".card");
+                        card.querySelector("img").remove();
+                        card.querySelector(".cancel-btn").remove();
+                        card.querySelector(".accept-btn").remove();
+                        card.querySelector(".card-text").innerHTML = "<strong>Subscription Payment Cancelled</strong>";
+                      } else {
+                        console.error("Failed to cancel subscription:", data.message);
+                      }
+                    })
+                    .catch((error) => {
+                      console.error("Error:", error);
+                    });
+                });
+              });
+            });
+
+            // CSRF token helper function
+            function getCookie(name) {
+              let cookieValue = null;
+              if (document.cookie && document.cookie !== "") {
+                const cookies = document.cookie.split(";");
+                for (let i = 0; i < cookies.length; i++) {
+                  const cookie = cookies[i].trim();
+                  if (cookie.substring(0, name.length + 1) === name + "=") {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                  }
+                }
+              }
+              return cookieValue;
+            }
+          </script>
+          <!-------------------- End Subscriptions Tab ---------------------->
 
           <!-------------------- Profile Tab ---------------------->
 

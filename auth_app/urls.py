@@ -56,4 +56,6 @@ urlpatterns = [
     path('get_seller_qrcode/<int:seller_id>/', views.get_seller_qrcode, name='get_seller_qrcode'),
     path('get-proof-of-payment/<int:transaction_id>/', views.get_proof_of_payment, name='get_proof_of_payment'),
     path('submit-subscription/', views.submit_subscription, name='submit_subscription'),
+    path('api/accept-subscription/<int:user_id>/', views.accept_subscription, name='accept_subscription'),
+    path('api/cancel-subscription/<int:user_id>/', views.cancel_subscription, name='cancel_subscription'),
 ]
