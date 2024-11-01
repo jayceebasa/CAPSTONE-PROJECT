@@ -15,7 +15,8 @@ class User(AbstractUser):
     qrcode = models.ImageField(upload_to='qrcodes/', null=True, blank=True)
     role = models.CharField(max_length=50, choices=[('admin', 'Admin'), ('user', 'User'), ('Seller', 'seller')], default='User')
     email_verification_token = models.CharField(max_length=32, blank=True, null=True)  # Add this line
-
+    subscription_end_date = models.DateTimeField(null=True, blank=True)  # Add this line
+    subscription_payment = models.ImageField(upload_to='subscription_payments/', blank=True, null=True)
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = []
     

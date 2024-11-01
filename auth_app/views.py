@@ -161,11 +161,18 @@ def seller_profile(request):
     transaction_page_number = request.GET.get('transaction_page')
     transaction_page_obj = transaction_paginator.get_page(transaction_page_number)
 
+    admin_user = User.objects.filter(role='Admin').first()
+
+    is_waiting_for_verification = bool(request.user.subscription_payment and hasattr(request.user.subscription_payment, 'url'))
     return render(request, 'core/prof_seller.html', {
         'form': form,
         'user': request.user,
         'products': page_obj,
-        'transactions': transaction_page_obj
+        'transactions': transaction_page_obj,
+        'admin_user': admin_user,
+        'is_subscribed': request.user.is_subscribed,
+        'subscription_payment': request.user.subscription_payment,
+        'is_waiting_for_verification': is_waiting_for_verification,
     })
 
 
@@ -937,6 +944,24 @@ def get_seller_qrcode(request, seller_id):
             return JsonResponse({'success': False, 'error': 'QR code not found'})
     except User.DoesNotExist:
         return JsonResponse({'success': False, 'error': 'Seller not found'}) 
+
+@login_required
+def submit_subscription(request):
+    if request.method == 'POST' and request.FILES.get('proof_of_payment'):
+        proof_of_payment = request.FILES['proof_of_payment']
+
+        # Save the proof of payment file in the correct subdirectory
+        fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, 'subscription_payments'))
+        filename = fs.save(proof_of_payment.name, proof_of_payment)
+        file_url = os.path.join('subscription_payments', filename)
+
+        # Update the user's subscription payment
+        request.user.subscription_payment = file_url
+        request.user.save()
+
+        return JsonResponse({'success': True})
+    else:
+        return JsonResponse({'success': False, 'error': 'No proof of payment uploaded'})
 
 #<========ADMIN VIEWS===========>
 

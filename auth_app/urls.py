@@ -55,4 +55,5 @@ urlpatterns = [
     path('create-stripe-session/', views.create_stripe_session, name='create_stripe_session'),
     path('get_seller_qrcode/<int:seller_id>/', views.get_seller_qrcode, name='get_seller_qrcode'),
     path('get-proof-of-payment/<int:transaction_id>/', views.get_proof_of_payment, name='get_proof_of_payment'),
+    path('submit-subscription/', views.submit_subscription, name='submit_subscription'),
 ]

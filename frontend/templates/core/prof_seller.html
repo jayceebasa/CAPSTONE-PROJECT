@@ -776,7 +776,14 @@
                     </form>
                   </div>
 
+                  <!-- Add this inside the transaction-tab-pane div -->
                   <div class="tab-pane fade" id="transaction-tab-pane" role="tabpanel" aria-labelledby="transaction-tab">
+                    {% if not user.is_subscribed and not is_waiting_for_verification %}
+                    <div class="alert alert-warning" role="alert">You need to subscribe to be able to sell your products.</div>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#subscribeModal">Subscribe</button>
+                    {% elif is_waiting_for_verification %}
+                    <div class="alert alert-info" role="alert">Waiting for admin to verify your subscription.</div>
+                    {% else %}
                     <div class="table-responsive mt-3">
                       <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal" style="margin-bottom: 10px">
                         Add Product
@@ -1201,6 +1208,7 @@
                         </ul>
                       </nav>
                     </div>
+                    {% endif %}
                   </div>
 
                   <div class="tab-pane fade" id="order-tab-pane" role="tabpanel" aria-labelledby="order-tab">
@@ -1593,6 +1601,116 @@
             }
           })
           .catch((error) => console.error("Error fetching proof of payment:", error));
+      }
+    </script>
+
+    <!-- Add the subscribe modal at the end of the body -->
+    <div class="modal fade" id="subscribeModal" tabindex="-1" aria-labelledby="subscribeModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="subscribeModalLabel">Subscribe</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p><strong>You need to pay ₱300 per month to be able to sell your products.</strong></p>
+            <div class="text-center mb-3">
+              <p>Pay via Gcash using the QR code below:</p>
+              <img
+                src="{% if admin_user.qrcode %}{{ admin_user.qrcode.url }}{% else %}# {% endif %}"
+                alt="Admin QR Code"
+                class="img-fluid"
+                style="max-width: 100%; height: auto" />
+            </div>
+            <div class="mb-3">
+              <label for="proofOfPaymentInput" class="form-label">Upload Proof of Payment:</label>
+              <input type="file" id="proofOfPaymentInput" name="proof_of_payment" accept="image/*" class="form-control" />
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary" onclick="submitSubscription()">Subscribe</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="successModalLabel">Subscription Successful</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p>Please wait at least 24 hours before it reflects on your account. Thanks for subscribing!</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function submitSubscription() {
+        const proofOfPaymentInput = document.getElementById("proofOfPaymentInput");
+        if (proofOfPaymentInput.files.length === 0) {
+          alert("Please upload proof of payment.");
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("proof_of_payment", proofOfPaymentInput.files[0]);
+
+        fetch("{% url 'core:submit_subscription' %}", {
+          method: "POST",
+          body: formData,
+          headers: {
+            "X-CSRFToken": getCookie("csrftoken"),
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              // Close the first modal
+              const subscribeModal = bootstrap.Modal.getInstance(document.getElementById("subscribeModal"));
+              subscribeModal.hide();
+
+              // Show the success modal
+              const successModal = new bootstrap.Modal(document.getElementById("successModal"));
+              successModal.show();
+
+              // Change the content of the product tab
+              document.getElementById("transaction-tab-pane").innerHTML = `
+              <div class="alert alert-info" role="alert">
+                Waiting for admin to verify payment.
+              </div>
+              <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#subscribeModal">
+                Resend Proof of Payment
+              </button>
+            `;
+            } else {
+              alert("Error: " + data.error);
+            }
+          })
+          .catch((error) => console.error("Error submitting subscription:", error));
+      }
+
+      function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== "") {
+          const cookies = document.cookie.split("; ");
+          for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === name + "=") {
+              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+              break;
+            }
+          }
+        }
+        return cookieValue;
       }
     </script>
   </body>
