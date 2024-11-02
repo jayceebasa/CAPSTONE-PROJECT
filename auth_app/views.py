@@ -40,7 +40,7 @@ from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, datetime
 from django.db.models import Count
 import json
 import logging
@@ -575,7 +575,7 @@ def checkout_cod(request):
                 product=product,
                 quantity=quantity,
                 amount=product.price * quantity,
-                status='pending'  # or 'completed' based on your logic
+                status='processing'  # or 'completed' based on your logic
             )
 
             # Subtract the quantity from the product's stock
@@ -1034,11 +1034,15 @@ def user_creation_data(request):
 def sales_today(request):
     today = timezone.now().date()
     sales = Transaction.objects.filter(date__date=today, status='Delivered').aggregate(total_sales=Sum('amount'))
-    return JsonResponse(sales)
+    total_sales_amount = sales['total_sales'] or 0
+    formatted_sales = "₱{:,.2f}".format(total_sales_amount)
+    return JsonResponse({'total_sales': formatted_sales})
 
 def total_sales(request):
-    sales = Transaction.objects.filter(status='Delivered').aggregate(total_sales=Sum('amount'))
-    return JsonResponse(sales)
+  sales = Transaction.objects.filter(status='Delivered').aggregate(total_sales=Sum('amount'))
+  total_sales_amount = sales['total_sales'] or 0
+  formatted_sales = "₱{:,.2f}".format(total_sales_amount)
+  return JsonResponse({'total_sales': formatted_sales})
 
 def pending_orders(request):
     pending = Transaction.objects.filter(status='processing').count()
@@ -1134,6 +1138,7 @@ def accept_subscription(request, user_id):
         user = get_object_or_404(User, id=user_id)
         user.is_subscribed = True
         user.subscription_payment = None
+        user.subscription_end_date = timezone.now() + timedelta(days=30)
         user.save()
         return JsonResponse({"success": True})
     return JsonResponse({"success": False, "message": "Invalid request method"}, status=400)
