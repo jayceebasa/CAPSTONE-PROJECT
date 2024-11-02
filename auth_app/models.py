@@ -38,6 +38,7 @@ class Transaction(models.Model):
     status = models.CharField(max_length=50)  # e.g., 'completed', 'pending'
     date = models.DateTimeField(auto_now_add=True)
     proof_of_payment = models.ImageField(upload_to='proof_of_payments/', null=True, blank=True)
+    order_number = models.CharField(max_length=36, null=True, blank=True)  # Add this field
     
     def __str__(self):
         return f"{self.user.username} - {self.product.name} - {self.amount}"

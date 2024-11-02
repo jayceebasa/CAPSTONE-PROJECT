@@ -13,6 +13,7 @@ from rest_framework.response import Response
 from rest_framework import status
 import stripe
 import os
+import uuid
 from django.db.models import Max
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import render
@@ -531,6 +532,9 @@ def checkout(request):
             filename = fs.save(proof_of_payment.name, proof_of_payment)
             file_url = os.path.join('proof_of_payment', filename)
 
+             # Generate a unique order number
+            order_number = str(uuid.uuid4())
+            
             for item in cart_items:
                 product = item.product
                 quantity = item.quantity
@@ -538,11 +542,12 @@ def checkout(request):
                 # Create a transaction
                 Transaction.objects.create(
                     user=request.user,
-                    product=product,
-                    quantity=quantity,
-                    amount=product.price * quantity,
-                    status='pending',  # or 'completed' based on your logic
-                    proof_of_payment=file_url
+                    product=item.product,
+                    quantity=item.quantity,
+                    amount=item.product.price * item.quantity,
+                    status='processing',
+                    proof_of_payment=proof_of_payment,
+                    order_number=order_number  # Save the order number
                 )
 
                 # Subtract the quantity from the product's stock
