@@ -104,15 +104,16 @@ def shop_view(request):
     
     max_price = products_list.aggregate(Max('price'))['price__max']
     
-    # Format the price for each product
+# Add a formatted price attribute for each product
     for product in products_list:
-        product.price = "₱{:,.2f}".format(product.price)
+        product.formatted_price = "₱{:,.2f}".format(product.price)
     
     return render(request, 'core/shop.html', {
         'products': products_list,
         'product_types': product_types,
         'max_price': max_price,
     })
+    
 @login_required
 def user_profile(request):
     if request.method == 'POST':

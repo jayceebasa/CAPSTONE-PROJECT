@@ -77,12 +77,13 @@
             </a>
           </div>
           <h3>{{ product.name }}</h3>
-          <p class="product-price"><span>{{ product.type.split|first }}</span>{{ product.price }}</p>
-          <a href="#" class="cart-btn add-to-cart" data-product-id="{{ product.id }}"><i class="fas fa-shopping-cart"></i> Add to Cart</a>
+          <p class="product-price">{{ product.formatted_price }}</p>
+          <a href="#" class="cart-btn add-to-cart" data-product-id="{{ product.id }}">Add to Cart</a>
         </div>
       </div>
       {% endfor %}
     </div>
+    
     <div id="loading" style="text-align: center; display: none">
       <p>Loading more products...</p>
     </div>
