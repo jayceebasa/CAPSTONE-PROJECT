@@ -38,6 +38,7 @@ class Transaction(models.Model):
     status = models.CharField(max_length=50)  # e.g., 'completed', 'pending'
     date = models.DateTimeField(auto_now_add=True)
     proof_of_payment = models.ImageField(upload_to='proof_of_payments/', null=True, blank=True)
+    shipping_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # Add shipping fee field
     order_number = models.CharField(max_length=36, null=True, blank=True)  # Add this field
     
     def __str__(self):

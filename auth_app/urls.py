@@ -54,8 +54,12 @@ urlpatterns = [
     path('api/webhook/', views.stripe_webhook, name='stripe_webhook'),
     path('create-stripe-session/', views.create_stripe_session, name='create_stripe_session'),
     path('get_seller_qrcode/<int:seller_id>/', views.get_seller_qrcode, name='get_seller_qrcode'),
-    path('get-proof-of-payment/<int:transaction_id>/', views.get_proof_of_payment, name='get_proof_of_payment'),
+    path('get_proof_of_payment/<int:transaction_id>/', views.get_proof_of_payment, name='get_proof_of_payment'),
     path('submit-subscription/', views.submit_subscription, name='submit_subscription'),
     path('api/accept-subscription/<int:user_id>/', views.accept_subscription, name='accept_subscription'),
     path('api/cancel-subscription/<int:user_id>/', views.cancel_subscription, name='cancel_subscription'),
+    path('get_order_details/<str:order_number>/', views.get_order_details, name='get_order_details'),
+    path('get_order_details/<str:order_number>/', views.get_order_details, name='get_order_details'),
+    path('update_order_status/<str:order_number>/', views.update_order_status, name='update_order_status'),
+    path('remove_transaction/<str:order_number>/', views.remove_transaction, name='remove_transaction'),
 ]

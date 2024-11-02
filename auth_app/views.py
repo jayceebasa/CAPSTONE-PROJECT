@@ -13,6 +13,7 @@ from rest_framework.response import Response
 from rest_framework import status
 import stripe
 import os
+from collections import defaultdict
 import uuid
 from django.db.models import Max
 from rest_framework.permissions import IsAuthenticated
@@ -156,32 +157,112 @@ def seller_profile(request):
     user_products = Product.objects.filter(seller=request.user)
     transactions = Transaction.objects.filter(product__seller=request.user).order_by('-date')
 
-    # Pagination
-    paginator = Paginator(user_products, 4)  # Show 4 products per page
+    # Group transactions by order number
+    grouped_transactions = defaultdict(list)
+    for transaction in transactions:
+        grouped_transactions[transaction.order_number].append(transaction)
+
+    # Prepare the grouped transactions for pagination
+    grouped_transactions_list = []
+    for order_number, items in grouped_transactions.items():
+        total_amount = sum(item.amount for item in items)
+        total_quantity = sum(item.quantity for item in items)
+        grouped_transactions_list.append({
+            'order_number': order_number,
+            'items': items,
+            'total_amount': total_amount,
+            'formatted_total_amount': "₱{:,.2f}".format(total_amount),  # Add formatted price
+            'total_quantity': total_quantity,
+            'date': items[0].date,
+            'status': items[0].status,
+            'user': items[0].user,
+        })
+
+    # Apply pagination to the grouped transactions
+    paginator = Paginator(grouped_transactions_list, 4)  # Show 4 grouped transactions per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-
-    # Pagination for transactions
-    transaction_paginator = Paginator(transactions, 4)  # Show 4 transactions per page
-    transaction_page_number = request.GET.get('transaction_page')
-    transaction_page_obj = transaction_paginator.get_page(transaction_page_number)
 
     admin_user = User.objects.filter(role='Admin').first()
 
     is_waiting_for_verification = bool(request.user.subscription_payment and hasattr(request.user.subscription_payment, 'url'))
-    
+
     return render(request, 'core/prof_seller.html', {
         'form': form,
         'user': request.user,
         'products': page_obj,
-        'transactions': transaction_page_obj,
+        'transactions': page_obj,
         'admin_user': admin_user,
         'is_subscribed': request.user.is_subscribed,
         'subscription_payment': request.user.subscription_payment,
         'is_waiting_for_verification': is_waiting_for_verification,
     })
 
+@login_required
+def get_order_details(request, order_number):
+    transactions = Transaction.objects.filter(order_number=order_number, product__seller=request.user)
+    if not transactions.exists():
+        return JsonResponse({'error': 'Order not found'}, status=404)
 
+    items = [{
+        'id': transaction.id,
+        'product': {
+            'name': transaction.product.name,
+            'formatted_price': "₱{:,.2f}".format(transaction.product.price),  # Add formatted price
+            'image_url': transaction.product.image.url,  # Add image URL
+        },
+        'quantity': transaction.quantity,
+        'formatted_amount': "₱{:,.2f}".format(transaction.amount),  # Add formatted amount
+    } for transaction in transactions]
+
+    shipping_fee = 100.00  # Example shipping fee, you can replace this with your actual logic
+    formatted_shipping_fee = "₱{:,.2f}".format(shipping_fee)
+
+    order_details = {
+        'order_number': order_number,
+        'date': transactions[0].date,
+        'status': transactions[0].status,
+        'user': {
+            'first_name': transactions[0].user.first_name,
+            'last_name': transactions[0].user.last_name,
+            'address': transactions[0].user.address,
+        },
+        'items': items,
+        'total_quantity': sum(item['quantity'] for item in items),
+        'total_amount': sum(transaction.amount for transaction in transactions),
+        'formatted_total_amount': "₱{:,.2f}".format(sum(transaction.amount for transaction in transactions)),  # Add formatted total amount
+        'shipping_fee': formatted_shipping_fee,
+        'total_amount_with_shipping': "₱{:,.2f}".format(sum(transaction.amount for transaction in transactions) + shipping_fee),  # Add total amount with shipping
+    }
+
+    return JsonResponse(order_details)
+
+@csrf_exempt
+@require_POST
+@login_required
+def update_order_status(request, order_number):
+    transactions = Transaction.objects.filter(order_number=order_number, product__seller=request.user)
+    if not transactions.exists():
+        return JsonResponse({'error': 'Order not found'}, status=404)
+
+    data = json.loads(request.body)
+    status = data.get('status')
+    if status:
+        transactions.update(status=status)
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False, 'error': 'Invalid status'})
+
+
+@csrf_exempt
+@require_POST
+@login_required
+def remove_transaction(request, order_number):
+    transactions = Transaction.objects.filter(order_number=order_number, product__seller=request.user)
+    if not transactions.exists():
+        return JsonResponse({'error': 'Transaction not found'}, status=404)
+
+    transactions.delete()
+    return JsonResponse({'success': True})
 
 @login_required
 def transaction_history(request):
@@ -601,9 +682,12 @@ def checkout_cod(request):
 
 @login_required
 def get_proof_of_payment(request, transaction_id):
-    transaction = get_object_or_404(Transaction, id=transaction_id, product__seller=request.user)
-    proof_of_payment_url = transaction.proof_of_payment.url if transaction.proof_of_payment else None
-    return JsonResponse({'proof_of_payment_url': proof_of_payment_url})
+    try:
+        transaction = Transaction.objects.get(id=transaction_id, product__seller=request.user)
+        proof_of_payment_url = transaction.proof_of_payment.url if transaction.proof_of_payment else None
+        return JsonResponse({'proof_of_payment_url': proof_of_payment_url})
+    except Transaction.DoesNotExist:
+        return JsonResponse({'error': 'Transaction not found'}, status=404)
       
 @api_view(['POST'])
 def add_product(request):
