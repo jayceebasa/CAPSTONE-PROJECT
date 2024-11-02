@@ -1,4 +1,5 @@
 # views.py
+from decimal import Decimal
 from rest_framework.views import APIView
 from .serializers import UserSerializer, TransactionSerializer
 from rest_framework.response import Response 
@@ -183,6 +184,12 @@ def seller_profile(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+  
+    products_paginator = Paginator(user_products, 4)  # Show 4 grouped transactions per page
+    products_page_number = request.GET.get('page')
+    products_page_obj = products_paginator.get_page(products_page_number)
+  
+
     admin_user = User.objects.filter(role='Admin').first()
 
     is_waiting_for_verification = bool(request.user.subscription_payment and hasattr(request.user.subscription_payment, 'url'))
@@ -190,7 +197,7 @@ def seller_profile(request):
     return render(request, 'core/prof_seller.html', {
         'form': form,
         'user': request.user,
-        'products': page_obj,
+        'products': products_page_obj,
         'transactions': page_obj,
         'admin_user': admin_user,
         'is_subscribed': request.user.is_subscribed,
@@ -599,48 +606,40 @@ def create_stripe_session(request):
 @login_required
 def checkout(request):
     if request.method == 'POST':
-        item_ids = request.POST.get("item_ids")
-        proof_of_payment = request.FILES.get("proof_of_payment")
+        data = json.loads(request.body)
+        item_ids = data.get('item_ids', [])
+        shipping_fee = Decimal(data.get('shipping_fee', '0.00'))
 
-        if item_ids and proof_of_payment:
-            item_ids = json.loads(item_ids)
+        if not item_ids:
+            return JsonResponse({'success': False, 'error': 'No items selected for checkout'})
 
-            cart = Cart.objects.get(user=request.user)
-            cart_items = CartItem.objects.filter(cart=cart, id__in=item_ids)
+        cart_items = CartItem.objects.filter(id__in=item_ids, cart__user=request.user)
+        if not cart_items.exists():
+            return JsonResponse({'success': False, 'error': 'No valid items found for checkout'})
 
-  # Save the proof of payment file in the correct subdirectory
-            fs = FileSystemStorage(location=os.path.join(settings.MEDIA_ROOT, 'proof_of_payment'))
-            filename = fs.save(proof_of_payment.name, proof_of_payment)
-            file_url = os.path.join('proof_of_payment', filename)
+        order_number = str(uuid.uuid4())
+        total_amount = Decimal('0.00')
 
-             # Generate a unique order number
-            order_number = str(uuid.uuid4())
-            
-            for item in cart_items:
-                product = item.product
-                quantity = item.quantity
+        for item in cart_items:
+            total_amount += item.product.price * item.quantity
+            Transaction.objects.create(
+                user=request.user,
+                product=item.product,
+                quantity=item.quantity,
+                amount=item.product.price * item.quantity,
+                status='processing',
+                order_number=order_number,
+                shipping_fee=shipping_fee
+            )
 
-                # Create a transaction
-                Transaction.objects.create(
-                    user=request.user,
-                    product=item.product,
-                    quantity=item.quantity,
-                    amount=item.product.price * item.quantity,
-                    status='processing',
-                    proof_of_payment=proof_of_payment,
-                    order_number=order_number  # Save the order number
-                )
+            # Subtract the quantity from the product's stock
+            item.product.stock -= item.quantity
+            item.product.save()
 
-                # Subtract the quantity from the product's stock
-                product.stock -= quantity
-                product.save()
+        # Clear the selected items from the cart after checkout
+        cart_items.delete()
 
-            # Clear the selected items from the cart after checkout
-            cart_items.delete()
-
-            return JsonResponse({'success': True})
-
-        return JsonResponse({'success': False, 'error': 'Missing item_ids or proof_of_payment'})
+        return JsonResponse({'success': True, 'order_number': order_number})
 
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
@@ -651,10 +650,13 @@ def checkout_cod(request):
     if request.method == 'POST':
         data = json.loads(request.body)
         item_ids = data.get('item_ids', [])
-
+        shipping_fee = Decimal(data.get('shipping_fee', '0.00'))
         cart = Cart.objects.get(user=request.user)
         cart_items = CartItem.objects.filter(cart=cart, id__in=item_ids)
 
+        order_number = str(uuid.uuid4())
+        total_amount = Decimal('0.00')
+  
 
         for item in cart_items:
             product = item.product
@@ -663,10 +665,12 @@ def checkout_cod(request):
             # Create a transaction
             Transaction.objects.create(
                 user=request.user,
-                product=product,
-                quantity=quantity,
-                amount=product.price * quantity,
-                status='processing'  # or 'completed' based on your logic
+                product=item.product,
+                quantity=item.quantity,
+                amount=item.product.price * item.quantity,
+                status='processing',
+                order_number=order_number,
+                shipping_fee=shipping_fee
             )
 
             # Subtract the quantity from the product's stock

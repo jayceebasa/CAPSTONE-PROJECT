@@ -1330,134 +1330,193 @@
         const viewOrderButtons = document.querySelectorAll(".view-order-btn");
         const removeTransactionButtons = document.querySelectorAll(".remove-transaction-btn");
 
-        viewOrderButtons.forEach((button) => {
-          button.addEventListener("click", function () {
-            const orderNumber = this.getAttribute("data-order");
+        // Handle tab switching without reloading the page
+        const orderTabButton = document.getElementById("order-tab");
+        orderTabButton.addEventListener("click", function (event) {
+          event.preventDefault();
+          const orderTabPane = document.getElementById("order-tab-pane");
+          const tabContent = new bootstrap.Tab(orderTabPane);
+          tabContent.show();
 
-            fetch(`/get_order_details/${orderNumber}/`)
-              .then((response) => response.json())
-              .then((data) => {
-                const orderDetailsContent = document.getElementById("orderDetailsContent");
-                orderDetailsContent.innerHTML = `
-              <p><strong>Order Number:</strong> ${data.order_number}</p>
-              <p><strong>Date:</strong> ${data.date}</p>
-              <p><strong>Status:</strong> ${data.status}</p>
-              <p><strong>User:</strong> ${data.user.first_name} ${data.user.last_name}</p>
-              <p><strong>Address:</strong> ${data.user.address}</p>
-              <h5>Items:</h5>
-              <ul>
-                ${data.items
-                  .map(
-                    (item) => `
-                  <li>
-                    <img src="${item.product.image_url}" alt="${item.product.name}" style="width: 100px; height: 100px;" />
-                    ${item.product.name} - ${item.product.formatted_price} (Quantity: ${item.quantity})
-                  </li>
-                `
-                  )
-                  .join("")}
-              </ul>
-              <p><strong>Total Quantity:</strong> ${data.total_quantity}</p>
-              <p><strong>Total Amount:</strong> ${data.formatted_total_amount}</p>
-              <p><strong>Shipping Fee:</strong> ${data.shipping_fee}</p>
-              <p><strong>Total Amount with Shipping:</strong> ${data.total_amount_with_shipping}</p>
-            `;
-
-                // Conditionally display the In Transit and Cancel Order buttons
-                const inTransitButton = document.getElementById("inTransitButton");
-                const cancelOrderButton = document.getElementById("cancelOrderButton");
-                if (data.status === "processing") {
-                  inTransitButton.style.display = "inline-block";
-                  cancelOrderButton.style.display = "inline-block";
-                } else {
-                  inTransitButton.style.display = "none";
-                  cancelOrderButton.style.display = "none";
-                }
-
-                // Set up the In Transit button
-                inTransitButton.onclick = function () {
-                  fetch(`/update_order_status/${orderNumber}/`, {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                      "X-CSRFToken": "{{ csrf_token }}",
-                    },
-                    body: JSON.stringify({ status: "In transit" }),
-                  })
-                    .then((response) => response.json())
-                    .then((data) => {
-                      if (data.success) {
-                        alert("Order status updated to In Transit");
-                        location.reload();
-                      } else {
-                        alert("Failed to update order status");
-                      }
-                    });
-                };
-
-                // Set up the Cancel Order button
-                cancelOrderButton.onclick = function () {
-                  fetch(`/update_order_status/${orderNumber}/`, {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                      "X-CSRFToken": "{{ csrf_token }}",
-                    },
-                    body: JSON.stringify({ status: "cancelled" }),
-                  })
-                    .then((response) => response.json())
-                    .then((data) => {
-                      if (data.success) {
-                        alert("Order status updated to Cancelled");
-                        location.reload();
-                      } else {
-                        alert("Failed to update order status");
-                      }
-                    });
-                };
-
-                // Set up the View Receipt button
-                const viewReceiptButton = document.getElementById("viewReceiptButton");
-                viewReceiptButton.onclick = function () {
-                  fetch(`/get_proof_of_payment/${data.items[0].id}/`)
-                    .then((response) => response.json())
-                    .then((data) => {
-                      if (data.proof_of_payment_url) {
-                        const proofOfPaymentContainer = document.getElementById("proofOfPaymentContainer");
-                        const proofOfPaymentImage = document.getElementById("proofOfPaymentImage");
-                        proofOfPaymentImage.src = data.proof_of_payment_url;
-                        proofOfPaymentContainer.style.display = "block";
-                      } else {
-                        alert("No proof of payment available");
-                      }
-                    });
-                };
-              });
-          });
+          // Load the orders content dynamically
+          fetchOrders();
         });
 
-        removeTransactionButtons.forEach((button) => {
-          button.addEventListener("click", function () {
-            const orderNumber = this.getAttribute("data-order");
+        function fetchOrders() {
+          fetch("/get_orders/")
+            .then((response) => response.json())
+            .then((data) => {
+              const ordersTableBody = document.querySelector("#order-tab-pane tbody");
+              ordersTableBody.innerHTML = data.orders
+                .map(
+                  (order) => `
+                <tr>
+                  <td>${order.order_number}</td>
+                  <td>${order.date}</td>
+                  <td>${order.total_quantity}</td>
+                  <td>${order.formatted_total_amount}</td>
+                  <td>${order.status}</td>
+                  <td>
+                    <div class="btn-group" role="group">
+                      <button class="btn btn-sm btn-primary view-order-btn" data-order="${
+                        order.order_number
+                      }" data-bs-toggle="modal" data-bs-target="#orderDetailsModal">View Order</button>
+                      ${
+                        order.status === "cancelled"
+                          ? `
+                      <button class="btn btn-sm btn-danger remove-transaction-btn" data-order="${order.order_number}">
+                        <i class="fas fa-trash-alt"></i>
+                      </button>`
+                          : ""
+                      }
+                    </div>
+                  </td>
+                </tr>
+              `
+                )
+                .join("");
 
-            fetch(`/remove_transaction/${orderNumber}/`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": "{{ csrf_token }}",
-              },
-            })
-              .then((response) => response.json())
-              .then((data) => {
-                if (data.success) {
-                  alert("Transaction removed successfully");
-                  location.reload();
-                } else {
-                  alert("Failed to remove transaction");
-                }
-              });
+              // Re-attach event listeners for the dynamically loaded buttons
+              attachEventListeners();
+            });
+        }
+
+        function attachEventListeners() {
+          const viewOrderButtons = document.querySelectorAll(".view-order-btn");
+          const removeTransactionButtons = document.querySelectorAll(".remove-transaction-btn");
+
+          viewOrderButtons.forEach((button) => {
+            button.addEventListener("click", function () {
+              const orderNumber = this.getAttribute("data-order");
+
+              fetch(`/get_order_details/${orderNumber}/`)
+                .then((response) => response.json())
+                .then((data) => {
+                  const orderDetailsContent = document.getElementById("orderDetailsContent");
+                  orderDetailsContent.innerHTML = `
+                    <p><strong>Order Number:</strong> ${data.order_number}</p>
+                    <p><strong>Date:</strong> ${data.date}</p>
+                    <p><strong>Status:</strong> ${data.status}</p>
+                    <p><strong>User:</strong> ${data.user.first_name} ${data.user.last_name}</p>
+                    <p><strong>Address:</strong> ${data.user.address}</p>
+                    <h5>Items:</h5>
+                    <ul>
+                      ${data.items
+                        .map(
+                          (item) => `
+                        <li>
+                          <img src="${item.product.image_url}" alt="${item.product.name}" style="width: 100px; height: 100px;" />
+                          ${item.product.name} - ${item.product.formatted_price} (Quantity: ${item.quantity})
+                        </li>
+                      `
+                        )
+                        .join("")}
+                    </ul>
+                    <p><strong>Total Quantity:</strong> ${data.total_quantity}</p>
+                    <p><strong>Total Amount:</strong> ${data.formatted_total_amount}</p>
+                    <p><strong>Shipping Fee:</strong> ${data.shipping_fee}</p>
+                    <p><strong>Total Amount with Shipping:</strong> ${data.total_amount_with_shipping}</p>
+                  `;
+
+                  // Conditionally display the In Transit and Cancel Order buttons
+                  const inTransitButton = document.getElementById("inTransitButton");
+                  const cancelOrderButton = document.getElementById("cancelOrderButton");
+                  if (data.status === "processing") {
+                    inTransitButton.style.display = "inline-block";
+                    cancelOrderButton.style.display = "inline-block";
+                  } else {
+                    inTransitButton.style.display = "none";
+                    cancelOrderButton.style.display = "none";
+                  }
+
+                  // Set up the In Transit button
+                  inTransitButton.onclick = function () {
+                    fetch(`/update_order_status/${orderNumber}/`, {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": "{{ csrf_token }}",
+                      },
+                      body: JSON.stringify({ status: "In transit" }),
+                    })
+                      .then((response) => response.json())
+                      .then((data) => {
+                        if (data.success) {
+                          alert("Order status updated to In Transit");
+                          fetchOrders(); // Refresh the orders list
+                        } else {
+                          alert("Failed to update order status");
+                        }
+                      });
+                  };
+
+                  // Set up the Cancel Order button
+                  cancelOrderButton.onclick = function () {
+                    fetch(`/update_order_status/${orderNumber}/`, {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": "{{ csrf_token }}",
+                      },
+                      body: JSON.stringify({ status: "cancelled" }),
+                    })
+                      .then((response) => response.json())
+                      .then((data) => {
+                        if (data.success) {
+                          alert("Order status updated to Cancelled");
+                          fetchOrders(); // Refresh the orders list
+                        } else {
+                          alert("Failed to update order status");
+                        }
+                      });
+                  };
+
+                  // Set up the View Receipt button
+                  const viewReceiptButton = document.getElementById("viewReceiptButton");
+                  viewReceiptButton.onclick = function () {
+                    fetch(`/get_proof_of_payment/${data.items[0].id}/`)
+                      .then((response) => response.json())
+                      .then((data) => {
+                        if (data.proof_of_payment_url) {
+                          const proofOfPaymentContainer = document.getElementById("proofOfPaymentContainer");
+                          const proofOfPaymentImage = document.getElementById("proofOfPaymentImage");
+                          proofOfPaymentImage.src = data.proof_of_payment_url;
+                          proofOfPaymentContainer.style.display = "block";
+                        } else {
+                          alert("No proof of payment available");
+                        }
+                      });
+                  };
+                });
+            });
           });
-        });
+
+          removeTransactionButtons.forEach((button) => {
+            button.addEventListener("click", function () {
+              const orderNumber = this.getAttribute("data-order");
+
+              fetch(`/remove_transaction/${orderNumber}/`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "X-CSRFToken": "{{ csrf_token }}",
+                },
+              })
+                .then((response) => response.json())
+                .then((data) => {
+                  if (data.success) {
+                    alert("Transaction removed successfully");
+                    fetchOrders(); // Refresh the orders list
+                  } else {
+                    alert("Failed to remove transaction");
+                  }
+                });
+            });
+          });
+        }
+
+        // Initial load of orders content
+        fetchOrders();
       });
     </script>
 
@@ -1677,11 +1736,18 @@
               }),
             })
               .then((response) => response.json())
+
               .then((data) => {
                 if (data.success) {
                   console.log("Status changed successfully"); // Debugging log
                   localStorage.setItem("activeTab", "#order-tab-pane"); // Ensure the active tab is set
-                  location.reload(); // Reload the page to show the updated status
+                  function updateOrderStatus(transactionId, status) {
+                    const orderElement = document.querySelector(`[data-transaction-id="${transactionId}"]`);
+                    if (orderElement) {
+                      orderElement.querySelector(".status").textContent = status;
+                    }
+                  } // Update the DOM to reflect the changes without reloading the page
+                  updateOrderStatus(transactionId, "In transit");
                 } else {
                   console.error("Error:", data.error); // Debugging log
                   alert("Error: " + data.error);

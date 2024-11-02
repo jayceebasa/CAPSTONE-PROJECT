@@ -32,7 +32,11 @@
       <div class="modal-body">
         <p>Please scan the QR code below to complete your payment.</p>
         <img id="gcashQrCode" src="{% static 'images/gcash-qr-code.png' %}" alt="GCash QR Code" class="img-fluid" />
-        <p class="mt-3"><strong>Amount to be paid: <u>₱<span id="gcashAmount">0.00</span></u></strong></p>
+        <p class="mt-3">
+          <strong
+            >Amount to be paid: <u>₱<span id="gcashAmount">0.00</span></u></strong
+          >
+        </p>
         <div class="form-group">
           <label for="proofOfPayment">Proof of Payment</label>
           <input type="file" class="form-control-file" id="proofOfPayment" accept="image/*" />
@@ -73,10 +77,12 @@
       const selectedItems = document.querySelectorAll(".select-product:checked");
       const selectedItemIds = Array.from(selectedItems).map((item) => item.dataset.itemId);
       const proofOfPaymentFile = proofOfPaymentInput.files[0];
+      const shippingFee = parseFloat(document.getElementById("shipping").textContent);
 
       const formData = new FormData();
       formData.append("item_ids", JSON.stringify(selectedItemIds));
       formData.append("proof_of_payment", proofOfPaymentFile);
+      formData.append("shipping_fee", shippingFee);
 
       fetch("{% url 'core:checkout' %}", {
         method: "POST",
@@ -249,21 +255,23 @@
               // Check the selected payment option
               const paymentOption = document.querySelector('input[name="paymentOption"]:checked').value;
 
+              const shippingFee = parseFloat(document.getElementById("shipping").textContent);
+
               if (paymentOption === "cod") {
-                handleCodPayment(selectedItemIds);
+                handleCodPayment(selectedItemIds, shippingFee);
               } else if (paymentOption === "gcash") {
-                handleGcashPayment(selectedItems);
+                handleGcashPayment(selectedItems, shippingFee);
               }
             });
 
-            function handleCodPayment(selectedItemIds) {
+            function handleCodPayment(selectedItemIds, shippingFee) {
               fetch("{% url 'core:checkout_cod' %}", {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
                   "X-CSRFToken": "{{ csrf_token }}",
                 },
-                body: JSON.stringify({ item_ids: selectedItemIds }),
+                body: JSON.stringify({ item_ids: selectedItemIds, shipping_fee: shippingFee }),
               })
                 .then((response) => response.json())
                 .then((data) => {
@@ -276,7 +284,7 @@
                 .catch((error) => console.error("Error:", error));
             }
 
-            function handleGcashPayment(selectedItems) {
+            function handleGcashPayment(selectedItems, shippingFee) {
               const sellerId = selectedItems[0].dataset.sellerId;
               fetch(`/get_seller_qrcode/${sellerId}/`)
                 .then((response) => response.json())
