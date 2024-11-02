@@ -182,7 +182,11 @@ def seller_profile(request):
     paginator = Paginator(grouped_transactions_list, 4)  # Show 4 grouped transactions per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-
+    
+    products_paginator = Paginator(user_products, 4)  # Show 4 grouped transactions per page
+    products_page_number = request.GET.get('page')
+    products_page_obj = products_paginator.get_page(products_page_number)  
+    
     admin_user = User.objects.filter(role='Admin').first()
 
     is_waiting_for_verification = bool(request.user.subscription_payment and hasattr(request.user.subscription_payment, 'url'))
@@ -190,7 +194,7 @@ def seller_profile(request):
     return render(request, 'core/prof_seller.html', {
         'form': form,
         'user': request.user,
-        'products': page_obj,
+        'products': products_page_obj,
         'transactions': page_obj,
         'admin_user': admin_user,
         'is_subscribed': request.user.is_subscribed,
@@ -215,7 +219,7 @@ def get_order_details(request, order_number):
         'formatted_amount': "₱{:,.2f}".format(transaction.amount),  # Add formatted amount
     } for transaction in transactions]
 
-    shipping_fee = 100.00  # Example shipping fee, you can replace this with your actual logic
+    shipping_fee = 100  # Example shipping fee, you can replace this with your actual logic
     formatted_shipping_fee = "₱{:,.2f}".format(shipping_fee)
 
     order_details = {
