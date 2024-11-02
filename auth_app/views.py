@@ -104,12 +104,15 @@ def shop_view(request):
     
     max_price = products_list.aggregate(Max('price'))['price__max']
     
+    # Format the price for each product
+    for product in products_list:
+        product.price = "₱{:,.2f}".format(product.price)
+    
     return render(request, 'core/shop.html', {
         'products': products_list,
         'product_types': product_types,
         'max_price': max_price,
     })
-  
 @login_required
 def user_profile(request):
     if request.method == 'POST':
@@ -164,6 +167,7 @@ def seller_profile(request):
     admin_user = User.objects.filter(role='Admin').first()
 
     is_waiting_for_verification = bool(request.user.subscription_payment and hasattr(request.user.subscription_payment, 'url'))
+    
     return render(request, 'core/prof_seller.html', {
         'form': form,
         'user': request.user,
@@ -767,7 +771,18 @@ def single_product(request, id):
     product = get_object_or_404(Product, id=id)
     all_products = list(Product.objects.exclude(id=product.id))
     related_products = random.sample(all_products, min(len(all_products), 3))
-    return render(request, 'core/single-product.html', {'product': product, 'related_products': related_products})
+    
+    # Format the price for the main product
+    product.price = "₱{:,.2f}".format(product.price)
+    
+    # Format the price for each related product
+    for related_product in related_products:
+        related_product.price = "₱{:,.2f}".format(related_product.price)
+    
+    return render(request, 'core/single-product.html', {
+        'product': product,
+        'related_products': related_products
+    })
   
 @csrf_exempt
 @login_required
@@ -992,11 +1007,16 @@ def admin_view(request):
     # Serialize user data to JSON
     users_json = mark_safe(json.dumps(list(users.values('id', 'username', 'email', 'first_name', 'last_name', 'role', 'is_active'))))
 
+  # Fetch users with pending subscriptions
+    pending_subscriptions = User.objects.filter(subscription_payment__isnull=False)
+    users_with_subscriptions = User.objects.filter(subscription_payment__isnull=False)
     return render(request, 'core/admin.html', {
         'user': request.user,
         'transactions': transactions,
         'users': user_page_obj,
-        'users_json': users_json  # Pass the JSON data to the template
+        'pending_subscriptions': pending_subscriptions,
+        'users_json': users_json,  # Pass the JSON data to the template
+        'users': users_with_subscriptions,
     })
     
 def login_data(request):

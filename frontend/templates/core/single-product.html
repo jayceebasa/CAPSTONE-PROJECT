@@ -26,7 +26,7 @@
       <div class="col-md-7">
         <div class="single-product-content">
           <h3>{{ product.name }}</h3>
-          <p class="single-product-pricing"><span>{{ product.type.split|first }}</span> ₱{{ product.price }}</p>
+          <p class="single-product-pricing"><span>{{ product.type.split|first }}</span>{{ product.price }}</p>
           <p>Stocks: {{ product.stock }}</p>
           <p>{{ product.description }}</p>
           <div class="single-product-form">
@@ -63,7 +63,7 @@
             </a>
           </div>
           <h3>{{ product.name }}</h3>
-          <p class="product-price"><span>{{ product.type.split|first }}</span> {{ product.price }}₱</p>
+          <p class="product-price"><span>{{ product.type.split|first }}</span> {{ product.price }}</p>
           <a href="#" class="cart-btn add-to-cart" data-product-id="{{ product.id }}"><i class="fas fa-shopping-cart"></i> Add to Cart</a>
         </div>
       </div>
