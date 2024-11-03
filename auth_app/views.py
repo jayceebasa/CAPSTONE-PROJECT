@@ -690,7 +690,9 @@ def checkout_cod(request):
         cart = Cart.objects.get(user=request.user)
         cart_items = CartItem.objects.filter(cart=cart, id__in=item_ids)
 
-
+        # Generate a unique order number
+        order_number = str(uuid.uuid4())
+        
         for item in cart_items:
             product = item.product
             quantity = item.quantity
@@ -701,7 +703,8 @@ def checkout_cod(request):
                 product=product,
                 quantity=quantity,
                 amount=product.price * quantity,
-                status='processing'  # or 'completed' based on your logic
+                status='processing',  # or 'completed' based on your logic
+                order_number=order_number  # Save the order number
             )
 
             # Subtract the quantity from the product's stock
