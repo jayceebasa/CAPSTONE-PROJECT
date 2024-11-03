@@ -250,7 +250,7 @@ def get_order_details(request, order_number):
         'formatted_amount': "₱{:,.2f}".format(transaction.amount),  # Add formatted amount
     } for transaction in transactions]
 
-    shipping_fee = 100  # Example shipping fee, you can replace this with your actual logic
+    shipping_fee = transactions[0].shipping_fee  # Get the shipping fee of the first transaction
     formatted_shipping_fee = "₱{:,.2f}".format(shipping_fee)
 
     order_details = {
@@ -718,7 +718,10 @@ def checkout_cod(request):
 @login_required
 def get_proof_of_payment(request, transaction_id):
     try:
-        transaction = Transaction.objects.get(id=transaction_id, product__seller=request.user)
+        transaction = Transaction.objects.get(id=transaction_id)
+        if request.user != transaction.user and request.user != transaction.product.seller:
+            return JsonResponse({'error': 'Permission denied'}, status=403)
+
         proof_of_payment_url = transaction.proof_of_payment.url if transaction.proof_of_payment else None
         return JsonResponse({'proof_of_payment_url': proof_of_payment_url})
     except Transaction.DoesNotExist:
