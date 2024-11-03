@@ -650,6 +650,7 @@ def checkout(request):
 
              # Generate a unique order number
             order_number = str(uuid.uuid4())
+            shipping_fee = calculate_shipping_fee(request.user)
             
             for item in cart_items:
                 product = item.product
@@ -662,6 +663,8 @@ def checkout(request):
                     quantity=item.quantity,
                     amount=item.product.price * item.quantity,
                     status='processing',
+
+                    shipping_fee=shipping_fee,
                     proof_of_payment=proof_of_payment,
                     order_number=order_number  # Save the order number
                 )
@@ -679,6 +682,17 @@ def checkout(request):
 
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
+
+def calculate_shipping_fee(user):
+    user_location = get_user_location(user)
+    if user_location == "Luzon":
+        return 200
+    elif user_location == "Visayas":
+        return 500
+    elif user_location == "Mindanao":
+        return 800
+    return 0
+
       
 @csrf_exempt
 @login_required
@@ -692,7 +706,7 @@ def checkout_cod(request):
 
         # Generate a unique order number
         order_number = str(uuid.uuid4())
-        
+        shipping_fee = calculate_shipping_fee(request.user)
         for item in cart_items:
             product = item.product
             quantity = item.quantity
@@ -703,6 +717,7 @@ def checkout_cod(request):
                 product=product,
                 quantity=quantity,
                 amount=product.price * quantity,
+                shipping_fee=shipping_fee,
                 status='processing',  # or 'completed' based on your logic
                 order_number=order_number  # Save the order number
             )
