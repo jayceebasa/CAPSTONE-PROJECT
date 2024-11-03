@@ -1000,14 +1000,14 @@ def cart_detail(request):
 
 def get_user_location(user):
     if user.address:
-        if any(region in user.address for region in ["Ilocos Region", "Cagayan Valley", "Central Luzon", "CALABARZON", "MIMAROPA", "Bicol Region", "Cordillera Administrative Region", "National Capital Region"]):
+        if any(region in user.address for region in ["Ilocos Region", "Cagayan Valley", "Central Luzon", "CALABARZON", "MIMAROPA", "Bicol Region", "CAR", "NCR"]):
             return "Luzon"
         if any(region in user.address for region in ["Western Visayas", "Central Visayas", "Eastern Visayas"]):
             return "Visayas"
         if any(region in user.address for region in ["Zamboanga Peninsula", "Northern Mindanao", "Davao Region", "SOCCSKSARGEN", "Caraga", "BARMM"]):
             return "Mindanao"
     return "Unknown"
- 
+
 @login_required
 def remove_from_cart(request, item_id):
     cart_item = get_object_or_404(CartItem, id=item_id, cart__user=request.user)
