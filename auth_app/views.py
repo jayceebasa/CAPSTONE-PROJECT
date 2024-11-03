@@ -1004,7 +1004,7 @@ def get_user_location(user):
             return "Luzon"
         if any(region in user.address for region in ["Western Visayas", "Central Visayas", "Eastern Visayas"]):
             return "Visayas"
-        if any(region in user.address for region in ["Zamboanga Peninsula", "Northern Mindanao", "Davao Region", "SOCCSKSARGEN", "Caraga", "Bangsamoro Autonomous Region in Muslim Mindanao"]):
+        if any(region in user.address for region in ["Zamboanga Peninsula", "Northern Mindanao", "Davao Region", "SOCCSKSARGEN", "Caraga", "BARMM"]):
             return "Mindanao"
     return "Unknown"
  
