@@ -706,11 +706,32 @@
                 <div id="message-container" class="d-none mt-3"></div>
               </div>
             </div>
+
+            <!-- Image and QR Code Upload Section -->
+            <div class="card mt-4">
+              <div class="card-body">
+                <h5 class="card-title">Upload Image and QR Code</h5>
+
+                <!-- Image and QR Code Upload Form -->
+                <form id="upload-form" method="post" enctype="multipart/form-data">
+                  {% csrf_token %}
+                  <div class="mb-3">
+                    <label for="qrCode">QR Code:</label>
+                    <input type="file" name="qrcode" id="qrCode" class="form-control" accept="image/*" required />
+                  </div>
+                  <button type="submit" class="btn btn-primary">Upload</button>
+                </form>
+
+                <!-- Message Container for Success/Error Messages -->
+                <div id="upload-message-container" class="d-none mt-3"></div>
+              </div>
+            </div>
           </div>
+
           <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
           <script>
             $(document).ready(function () {
-              // Handle form submission with AJAX
+              // Handle password change form submission with AJAX
               $("#change-password-form").on("submit", function (event) {
                 event.preventDefault();
                 var formData = $(this).serialize();
@@ -732,6 +753,30 @@
                     // Display error message
                     var response = JSON.parse(xhr.responseText);
                     $("#message-container").removeClass("d-none alert-success").addClass("alert alert-danger").text(response.message);
+                  },
+                });
+              });
+
+              // Handle image and QR code upload form submission with AJAX
+              $("#upload-form").on("submit", function (event) {
+                event.preventDefault();
+                var formData = new FormData(this);
+
+                $.ajax({
+                  url: "{% url 'core:save_qr_code' %}",
+                  method: "POST",
+                  data: formData,
+                  processData: false,
+                  contentType: false,
+                  success: function (response) {
+                    // Show success message
+                    $("#upload-message-container").removeClass("d-none alert-danger").addClass("alert alert-success").text("Successfully uploaded QR code");
+                    $("#upload-form")[0].reset();
+                  },
+                  error: function (xhr) {
+                    // Display error message
+                    var response = JSON.parse(xhr.responseText);
+                    $("#upload-message-container").removeClass("d-none alert-success").addClass("alert alert-danger").text(response.message);
                   },
                 });
               });
