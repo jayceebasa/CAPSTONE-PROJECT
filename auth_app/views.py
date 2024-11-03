@@ -130,15 +130,46 @@ def user_profile(request):
 
     # Fetch transactions and apply pagination
     transactions = Transaction.objects.filter(user=request.user).order_by('-date')
-    paginator = Paginator(transactions, 4)  # Show 4 transactions per page
+
+    # Group transactions by order number
+    grouped_transactions = defaultdict(list)
+    for transaction in transactions:
+        grouped_transactions[transaction.order_number].append(transaction)
+
+    # Prepare the grouped transactions for pagination
+    grouped_transactions_list = []
+    for order_number, items in grouped_transactions.items():
+        total_amount = sum(item.amount for item in items)
+        total_quantity = sum(item.quantity for item in items)
+        shipping_fee = items[0].shipping_fee  # Only get the shipping fee of the first item
+        total_amount_with_shipping = total_amount + shipping_fee
+        proof_of_payment = items[0].proof_of_payment.url if items[0].proof_of_payment else None
+        grouped_transactions_list.append({
+            'order_number': order_number,
+            'items': items,
+            'total_amount': total_amount,
+            'formatted_total_amount': "₱{:,.2f}".format(total_amount),  # Add formatted price
+            'total_quantity': total_quantity,
+            'date': items[0].date,
+            'status': items[0].status,
+            'user': items[0].user,
+            'shipping_fee': shipping_fee,
+            'formatted_total_amount_with_shipping': "₱{:,.2f}".format(total_amount_with_shipping),
+            'proof_of_payment': proof_of_payment,
+        })
+
+    # Apply pagination to the grouped transactions
+    paginator = Paginator(grouped_transactions_list, 4)  # Show 4 grouped transactions per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
     return render(request, 'core/prof_user.html', {
         'form': form,
         'user': request.user,
-        'transactions': page_obj
+        'transactions': page_obj,
+        'grouped_transactions': page_obj,
     })
+
 
 # views.py
 
@@ -204,7 +235,7 @@ def seller_profile(request):
 
 @login_required
 def get_order_details(request, order_number):
-    transactions = Transaction.objects.filter(order_number=order_number, product__seller=request.user)
+    transactions = Transaction.objects.filter(order_number=order_number).filter(Q(user=request.user) | Q(product__seller=request.user))
     if not transactions.exists():
         return JsonResponse({'error': 'Order not found'}, status=404)
 

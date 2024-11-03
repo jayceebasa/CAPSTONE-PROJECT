@@ -739,31 +739,32 @@
                       <table class="table table-striped table-hover">
                         <thead>
                           <tr>
-                            <th scope="col">#</th>
-                            <th scope="col" style="width: 10%">Image</th>
-                            <th scope="col">Product</th>
-                            <th scope="col">Quantity</th>
-                            <th scope="col">Price</th>
-                            <th scope="col">DOP</th>
+                            <th scope="col">Order Number</th>
+                            <th scope="col">Date</th>
+                            <th scope="col">Total Quantity</th>
+                            <th scope="col">Total Amount</th>
                             <th scope="col">Status</th>
                             <th scope="col">Action</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {% for transaction in transactions %}
+                          {% for order in grouped_transactions %}
                           <tr>
-                            <th scope="row">{{ forloop.counter }}</th>
-                            <td><img src="{{ transaction.product.image.url }}" alt="Product Image" style="max-width: 80px" /></td>
-                            <td>{{ transaction.product.name }}</td>
-                            <td>{{ transaction.quantity }}</td>
-                            <td>{{ transaction.amount }}</td>
-                            <td>{{ transaction.product.price }}</td>
-                            <td>{{ transaction.date }}</td>
-                            <td>{{ transaction.status }}</td>
+                            <td>{{ order.order_number }}</td>
+                            <td>{{ order.date }}</td>
+                            <td>{{ order.total_quantity }}</td>
+                            <td>{{ order.formatted_total_amount_with_shipping }}</td>
+                            <td>{{ order.status }}</td>
                             <td>
-                              {% if transaction.status == 'In transit' %}
-                              <button class="btn btn-sm btn-primary change-status-btn" data-transaction-id="{{ transaction.id }}">Delivered</button>
-                              {% endif %}
+                              <div class="btn-group" role="group">
+                                <button
+                                  class="btn btn-sm btn-primary view-order-btn"
+                                  data-order="{{ order.order_number }}"
+                                  data-bs-toggle="modal"
+                                  data-bs-target="#orderDetailsModal">
+                                  View Order
+                                </button>
+                              </div>
                             </td>
                           </tr>
                           {% endfor %}
@@ -805,6 +806,123 @@
                       </ul>
                     </nav>
                   </div>
+
+                  <!-- Order Details Modal -->
+                  <div class="modal fade" id="orderDetailsModal" tabindex="-1" aria-labelledby="orderDetailsModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h5 class="modal-title" id="orderDetailsModalLabel">Order Details</h5>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                          <div id="orderDetailsContent">
+                            <!-- Order details will be loaded here via JavaScript -->
+                          </div>
+                          <div id="proofOfPaymentContainer" style="display: none">
+                            <h5>Proof of Payment</h5>
+                            <img id="proofOfPaymentImage" src="" alt="Proof of Payment" class="img-fluid" />
+                          </div>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                          <button type="button" class="btn btn-primary" id="inTransitButton" style="display: none">In Transit</button>
+                          <button type="button" class="btn btn-danger" id="cancelOrderButton" style="display: none">Cancel Order</button>
+                          <button type="button" class="btn btn-info" id="viewReceiptButton">View Receipt</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <script>
+                    document.addEventListener("DOMContentLoaded", function () {
+                      const viewOrderButtons = document.querySelectorAll(".view-order-btn");
+
+                      viewOrderButtons.forEach((button) => {
+                        button.addEventListener("click", function () {
+                          const orderNumber = this.getAttribute("data-order");
+
+                          fetch(`/get_order_details/${orderNumber}/`)
+                            .then((response) => response.json())
+                            .then((data) => {
+                              const orderDetailsContent = document.getElementById("orderDetailsContent");
+                              orderDetailsContent.innerHTML = `
+              <p><strong>Order Number:</strong> ${data.order_number}</p>
+              <p><strong>Date:</strong> ${data.date}</p>
+              <p><strong>Status:</strong> ${data.status}</p>
+              <p><strong>User:</strong> ${data.user.first_name} ${data.user.last_name}</p>
+              <p><strong>Address:</strong> ${data.user.address}</p>
+              <h5>Items:</h5>
+              <ul>
+                ${data.items
+                  .map(
+                    (item) => `
+                  <li>
+                    <img src="${item.product.image_url}" alt="${item.product.name}" style="width: 100px; height: 100px;" />
+                    ${item.product.name} - ${item.product.formatted_price} (Quantity: ${item.quantity})
+                  </li>
+                `
+                  )
+                  .join("")}
+              </ul>
+              <p><strong>Total Quantity:</strong> ${data.total_quantity}</p>
+              <p><strong>Total Amount:</strong> ${data.formatted_total_amount}</p>
+              <p><strong>Shipping Fee:</strong> ${data.shipping_fee}</p>
+              <p><strong>Total Amount with Shipping:</strong> ${data.total_amount_with_shipping}</p>
+              ${data.proof_of_payment ? `<h5>Proof of Payment</h5><img src="${data.proof_of_payment}" alt="Proof of Payment" class="img-fluid" />` : ""}
+            `;
+
+                              // Conditionally display the In Transit and Cancel Order buttons
+
+                              const cancelOrderButton = document.getElementById("cancelOrderButton");
+                              if (data.status === "processing") {
+                                cancelOrderButton.style.display = "inline-block";
+                              } else {
+                                cancelOrderButton.style.display = "none";
+                              }
+
+                              // Set up the Cancel Order button
+                              cancelOrderButton.onclick = function () {
+                                fetch(`/update_order_status/${orderNumber}/`, {
+                                  method: "POST",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                    "X-CSRFToken": "{{ csrf_token }}",
+                                  },
+                                  body: JSON.stringify({ status: "cancelled" }),
+                                })
+                                  .then((response) => response.json())
+                                  .then((data) => {
+                                    if (data.success) {
+                                      alert("Order status updated to Cancelled");
+                                      location.reload();
+                                    } else {
+                                      alert("Failed to update order status");
+                                    }
+                                  });
+                              };
+
+                              // Set up the View Receipt button
+                              const viewReceiptButton = document.getElementById("viewReceiptButton");
+                              viewReceiptButton.onclick = function () {
+                                fetch(`/get_proof_of_payment/${data.items[0].id}/`)
+                                  .then((response) => response.json())
+                                  .then((data) => {
+                                    if (data.proof_of_payment_url) {
+                                      const proofOfPaymentContainer = document.getElementById("proofOfPaymentContainer");
+                                      const proofOfPaymentImage = document.getElementById("proofOfPaymentImage");
+                                      proofOfPaymentImage.src = data.proof_of_payment_url;
+                                      proofOfPaymentContainer.style.display = "block";
+                                    } else {
+                                      alert("No proof of payment available");
+                                    }
+                                  });
+                              };
+                            });
+                        });
+                      });
+                    });
+                  </script>
                 </div>
               </div>
             </div>
