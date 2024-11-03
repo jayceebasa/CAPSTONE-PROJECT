@@ -963,6 +963,48 @@
                         </div>
                       </div>
 
+                      <script>
+                        document.getElementById("editProductForm").addEventListener("submit", async function (event) {
+                          event.preventDefault(); // Prevent the default form submission
+                      
+                          const formData = new FormData(this);
+                          try {
+                            const response = await fetch(`/update_product/${productId}/`, {
+                              method: "POST",
+                              headers: {
+                                "X-CSRFToken": getCookie("csrftoken"),
+                              },
+                              body: formData,
+                            });
+                      
+                            const result = await response.json();
+                            if (result.success) {
+                              alert("Products updated successfully");
+                              // Optionally, update the UI with the new product data
+                            } else {
+                              alert("Failed to update products");
+                            }
+                          } catch (error) {
+                            console.error("Error updating products:", error);
+                          }
+                        });
+                      
+                        function getCookie(name) {
+                          let cookieValue = null;
+                          if (document.cookie && document.cookie !== "") {
+                            const cookies = document.cookie.split("; ");
+                            for (let i = 0; i < cookies.length; i++) {
+                              const cookie = cookies[i].trim();
+                              if (cookie.substring(0, name.length + 1) === name + "=") {
+                                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                                break;
+                              }
+                            }
+                          }
+                          return cookieValue;
+                        }
+                      </script>
+
                       <div class="table-responsive">
                         <table class="table table-striped table-hover">
                           <thead>
