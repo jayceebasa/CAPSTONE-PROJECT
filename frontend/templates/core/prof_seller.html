@@ -802,8 +802,26 @@
                                 <input type="hidden" id="sellerId" name="seller" value="{{ user.id }}" />
                                 <div class="mb-3">
                                   <label for="productImage" class="form-label">Image</label>
-                                  <input type="file" class="form-control" id="productImage" name="image" required />
+                                  <input type="file" class="form-control" id="productImage" name="image" required onchange="previewImage(event)" />
                                 </div>
+                                <div class="mb-3">
+                                  <label class="form-label">Image Preview</label>
+                                  <div id="imagePreviewContainer" style="display: none">
+                                    <img id="imagePreview" src="#" alt="Image Preview" style="max-width: 100%" />
+                                  </div>
+                                </div>
+
+                                <script>
+                                  function previewImage(event) {
+                                    const reader = new FileReader();
+                                    reader.onload = function () {
+                                      const output = document.getElementById("imagePreview");
+                                      output.src = reader.result;
+                                      document.getElementById("imagePreviewContainer").style.display = "block";
+                                    };
+                                    reader.readAsDataURL(event.target.files[0]);
+                                  }
+                                </script>
                                 <div class="mb-3">
                                   <label for="productName" class="form-label">Name</label>
                                   <input type="text" class="form-control" id="productName" name="name" required />
@@ -966,7 +984,7 @@
                       <script>
                         document.getElementById("editProductForm").addEventListener("submit", async function (event) {
                           event.preventDefault(); // Prevent the default form submission
-                      
+
                           const formData = new FormData(this);
                           try {
                             const response = await fetch(`/update_product/${productId}/`, {
@@ -976,7 +994,7 @@
                               },
                               body: formData,
                             });
-                      
+
                             const result = await response.json();
                             if (result.success) {
                               alert("Products updated successfully");
@@ -988,7 +1006,7 @@
                             console.error("Error updating products:", error);
                           }
                         });
-                      
+
                         function getCookie(name) {
                           let cookieValue = null;
                           if (document.cookie && document.cookie !== "") {
@@ -1371,6 +1389,9 @@
       document.addEventListener("DOMContentLoaded", function () {
         const viewOrderButtons = document.querySelectorAll(".view-order-btn");
         const removeTransactionButtons = document.querySelectorAll(".remove-transaction-btn");
+        const proofOfPaymentModal = document.getElementById("proofOfPaymentModal");
+        const proofOfPaymentImage = document.getElementById("proofOfPaymentImage");
+        const proofOfPaymentContainer = document.getElementById("proofOfPaymentContainer");
 
         viewOrderButtons.forEach((button) => {
           button.addEventListener("click", function () {
@@ -1468,6 +1489,7 @@
                         const proofOfPaymentContainer = document.getElementById("proofOfPaymentContainer");
                         const proofOfPaymentImage = document.getElementById("proofOfPaymentImage");
                         proofOfPaymentImage.src = data.proof_of_payment_url;
+                        proofOfPaymentImage.style.display = "block"; // Ensure the image is displayed
                         proofOfPaymentContainer.style.display = "block";
                       } else {
                         alert("No proof of payment available");
@@ -1476,6 +1498,14 @@
                 };
               });
           });
+        });
+
+        // Add event listener to close the proof of payment modal when the view order modal is hidden
+        const viewOrderModal = document.getElementById("orderDetailsModal");
+        viewOrderModal.addEventListener("hidden.bs.modal", function () {
+          proofOfPaymentImage.src = ""; // Reset the proof of payment image source
+          proofOfPaymentImage.style.display = "none"; // Hide the image element
+          proofOfPaymentContainer.style.display = "none"; // Hide the container
         });
 
         removeTransactionButtons.forEach((button) => {
