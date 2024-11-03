@@ -97,6 +97,11 @@ def index(request):
     
     all_products = list(Product.objects.all())
     related_products = random.sample(all_products, min(len(all_products), 3))
+    
+    # Format the price for each related product
+    for product in related_products:
+        product.formatted_price = "₱{:,.2f}".format(product.price)
+    
     return render(request, 'core/index.html', {'all_products': all_products, 'related_products': related_products})
 
 @login_required
