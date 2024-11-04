@@ -65,4 +65,5 @@ urlpatterns = [
     path('cancel-order/<str:order_number>/', views.cancel_order, name='cancel_order'),
     path('mark-delivered/<str:order_number>/', views.mark_as_delivered, name='mark_as_delivered'),
     path('update-subscription-status/', views.update_subscription_status, name='update_subscription_status'),
+    path('extend-subscription/', views.extend_subscription, name='extend_subscription'),
 ]

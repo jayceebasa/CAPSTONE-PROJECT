@@ -239,6 +239,7 @@ def seller_profile(request):
         'is_subscribed': request.user.is_subscribed,
         'subscription_payment': request.user.subscription_payment,
         'is_waiting_for_verification': is_waiting_for_verification,
+        'subscription_end_date': request.user.subscription_end_date,  # Add this line
     })
 
 @login_required
@@ -1359,10 +1360,8 @@ def cancel_subscription(request, user_id):
         return JsonResponse({"success": True})
     return JsonResponse({"success": False, "message": "Invalid request method"}, status=400)
 
-@csrf_exempt
-@login_required
 def update_subscription_status(request):
-    if request.method == 'POST':
+    if request.method == "POST":
         try:
             user = request.user
             today = timezone.now().date()
@@ -1379,6 +1378,32 @@ def update_subscription_status(request):
                 return JsonResponse({"success": True, "message": "Subscription status updated."}, status=200)
             else:
                 return JsonResponse({"success": False, "message": "Subscription end date has not passed yet."}, status=400)
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)}, status=500)
+    return JsonResponse({"success": False, "message": "Invalid request method."}, status=405)
+
+def extend_subscription(request):
+    if request.method == "POST":
+        try:
+            user = request.user
+            data = json.loads(request.body)
+            new_end_date_str = data.get("new_end_date")
+
+            if not new_end_date_str:
+                return JsonResponse({"success": False, "message": "New end date not provided."}, status=400)
+
+            new_end_date = datetime.strptime(new_end_date_str, "%Y-%m-%d").date()
+
+            # Extend the subscription end date by 30 days
+            if user.subscription_end_date:
+                user.subscription_end_date += timedelta(days=30)
+            else:
+                user.subscription_end_date = new_end_date
+
+            user.is_subscribed = True
+            user.save()
+
+            return JsonResponse({"success": True, "message": "Subscription extended by 30 days."}, status=200)
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)}, status=500)
     return JsonResponse({"success": False, "message": "Invalid request method."}, status=405)
