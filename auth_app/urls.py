@@ -63,4 +63,5 @@ urlpatterns = [
     path('update_order_status/<str:order_number>/', views.update_order_status, name='update_order_status'),
     path('remove_transaction/<str:order_number>/', views.remove_transaction, name='remove_transaction'),
     path('cancel-order/<str:order_number>/', views.cancel_order, name='cancel_order'),
+    path('mark-delivered/<str:order_number>/', views.mark_as_delivered, name='mark_as_delivered'),
 ]

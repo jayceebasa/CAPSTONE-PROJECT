@@ -801,9 +801,9 @@
 
                     <style>
                       .btn-group .btn {
-                          white-space: nowrap;
+                        white-space: nowrap;
                       }
-                  </style>
+                    </style>
                     <!-- Pagination Controls -->
                     <nav aria-label="Page navigation" id="paginationContainer">
                       <ul class="pagination justify-content-center">
@@ -887,6 +887,7 @@
                     document.addEventListener("DOMContentLoaded", function () {
                       const cancelOrderButton = document.getElementById("cancelOrderButton");
                       const deleteButtons = document.querySelectorAll(".delete-order-btn");
+                      const deliveredButton = document.getElementById("deliveredButton");
                       // Event delegation for view order buttons
                       document.querySelector("#transaction-tab-pane").addEventListener("click", function (event) {
                         if (event.target.classList.contains("view-order-btn")) {
@@ -932,6 +933,13 @@
                               }
                               
                             `;
+
+                            if (data.status === "In transit") {
+                              deliveredButton.style.display = "inline-block";
+                              deliveredButton.setAttribute("data-order", orderNumber);
+                            } else {
+                              deliveredButton.style.display = "none";
+                            }
 
                             // Conditionally display the Cancel Order button
 
@@ -992,6 +1000,26 @@
                           })
                           .catch((error) => console.error("Error fetching order details:", error));
                       }
+
+                      document.getElementById("deliveredButton").addEventListener("click", async function () {
+                        const orderNumber = deliveredButton.getAttribute("data-order");
+                        try {
+                          const response = await fetch(`/mark-delivered/${orderNumber}/`, {
+                            method: "POST",
+                            headers: {
+                              "X-CSRFToken": getCookie("csrftoken"),
+                            },
+                          });
+                          const result = await response.json();
+                          if (result.success) {
+                            window.location.reload();
+                          } else {
+                            alert("Error marking order as delivered: " + result.error);
+                          }
+                        } catch (error) {
+                          console.error("Error marking order as delivered:", error);
+                        }
+                      });
 
                       deleteButtons.forEach((button) => {
                         button.addEventListener("click", function () {

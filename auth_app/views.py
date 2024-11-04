@@ -309,6 +309,22 @@ def cancel_order(request, order_number):
 @csrf_exempt
 @require_POST
 @login_required
+def mark_as_delivered(request, order_number):
+    try:
+        transactions = Transaction.objects.filter(order_number=order_number).filter(
+            Q(user=request.user) | Q(product__seller=request.user)
+        )
+        if not transactions.exists():
+            return JsonResponse({'error': 'Order not found or you do not have permission to mark this order as delivered.'}, status=404)
+
+        transactions.update(status='Delivered')
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+@login_required
 def remove_transaction(request, order_number):
     transactions = Transaction.objects.filter(order_number=order_number).filter(
         Q(user=request.user) | Q(product__seller=request.user)
