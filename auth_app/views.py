@@ -1358,3 +1358,27 @@ def cancel_subscription(request, user_id):
         user.save()
         return JsonResponse({"success": True})
     return JsonResponse({"success": False, "message": "Invalid request method"}, status=400)
+
+@csrf_exempt
+@login_required
+def update_subscription_status(request):
+    if request.method == 'POST':
+        try:
+            user = request.user
+            today = timezone.now().date()
+            subscription_end_date = user.subscription_end_date
+
+            # Ensure subscription_end_date is a date object
+            if isinstance(subscription_end_date, datetime):
+                subscription_end_date = subscription_end_date.date()
+
+            if subscription_end_date and today >= subscription_end_date:
+                user.is_subscribed = False
+                user.subscription_end_date = None  # Clear the subscription end date
+                user.save()
+                return JsonResponse({"success": True, "message": "Subscription status updated."}, status=200)
+            else:
+                return JsonResponse({"success": False, "message": "Subscription end date has not passed yet."}, status=400)
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)}, status=500)
+    return JsonResponse({"success": False, "message": "Invalid request method."}, status=405)

@@ -1935,5 +1935,51 @@
         return cookieValue;
       }
     </script>
+
+    
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Function to check subscription status
+        function checkSubscriptionStatus() {
+          fetch("/update-subscription-status/", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": getCookie("csrftoken"), // Ensure you have a function to get the CSRF token
+            },
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                alert("Your subscription has ended. Please renew to continue using the service.");
+                location.reload(); // Reload the page to reflect the changes
+              } else if (data.message) {
+                console.log(data.message);
+              }
+            })
+            .catch((error) => console.error("Error:", error));
+        }
+
+        // Check subscription status on page load
+        checkSubscriptionStatus();
+      });
+
+      // Function to get CSRF token
+      function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== "") {
+          const cookies = document.cookie.split(";");
+          for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === name + "=") {
+              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+              break;
+            }
+          }
+        }
+        return cookieValue;
+      }
+    </script>
   </body>
 </html>
