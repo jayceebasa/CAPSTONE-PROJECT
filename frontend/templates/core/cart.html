@@ -246,6 +246,7 @@
               </tr>
             </tbody>
           </table>
+
           <!-- Payment Options -->
           <div class="payment-options mt-4">
             <h4>Payment Options</h4>
@@ -388,18 +389,20 @@
     let itemIdToDelete;
 
     const userLocation = "{{ user_location }}";
-    let shippingFee = 0;
 
-    if (userLocation === "Luzon") {
-      shippingFee = 200;
-    } else if (userLocation === "Visayas") {
-      shippingFee = 500;
-    } else if (userLocation === "Mindanao") {
-      shippingFee = 800;
+    function calculateShippingFee(sellerLocation) {
+      if (userLocation === sellerLocation) {
+        return 200;
+      } else if ((userLocation === "Luzon" && sellerLocation === "Mindanao") || (userLocation === "Mindanao" && sellerLocation === "Luzon")) {
+        return 800;
+      } else {
+        return 500;
+      }
     }
 
     function updateTotals() {
       let subtotal = 0;
+      let totalShippingFee = 0;
       let selectedSellerId = null;
       let selectedItems = document.querySelectorAll(".select-product:checked");
 
@@ -407,6 +410,9 @@
         const itemRow = document.querySelector(`tr[data-item-id="${checkbox.dataset.itemId}"]`);
         const itemTotalPrice = parseFloat(itemRow.querySelector(".item-total-price").textContent);
         subtotal += itemTotalPrice;
+
+        const sellerLocation = itemRow.dataset.sellerLocation;
+        totalShippingFee += calculateShippingFee(sellerLocation);
 
         if (selectedSellerId === null) {
           selectedSellerId = checkbox.dataset.sellerId;
@@ -419,19 +425,23 @@
           });
           selectedItems = document.querySelectorAll(".select-product:checked");
           subtotal = 0;
+          totalShippingFee = 0;
           selectedItems.forEach((cb) => {
             const itemRow = document.querySelector(`tr[data-item-id="${cb.dataset.itemId}"]`);
             const itemTotalPrice = parseFloat(itemRow.querySelector(".item-total-price").textContent);
             subtotal += itemTotalPrice;
+
+            const sellerLocation = itemRow.dataset.sellerLocation;
+            totalShippingFee += calculateShippingFee(sellerLocation);
           });
           return false; // Exit the loop
         }
       });
 
-      const total = subtotal + shippingFee;
+      const total = subtotal + totalShippingFee;
       document.getElementById("subtotal").textContent = subtotal.toFixed(2);
       document.getElementById("total").textContent = total.toFixed(2);
-      document.getElementById("shipping").textContent = shippingFee.toFixed(2);
+      document.getElementById("shipping").textContent = totalShippingFee.toFixed(2);
     }
 
     quantityInputs.forEach((input) => {

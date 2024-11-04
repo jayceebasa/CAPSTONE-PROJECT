@@ -974,28 +974,33 @@ def cart_detail(request):
     sellers = cart_items.values('product__seller').distinct()
     num_sellers = sellers.count()
     
-    
     user_location = get_user_location(request.user)
-    if user_location == "Luzon":
-        shipping_fee = 200
-    elif user_location == "Visayas":
-        shipping_fee = 500
-    elif user_location == "Mindanao":
-        shipping_fee = 800
-    else:
-        shipping_fee = 0  # Default shipping fee if location is unknown
+    total_shipping_fee = 0
 
+    seller_locations = {}
     for item in cart_items:
         item.total_price = item.product.price * item.quantity
         total_price += item.total_price
 
-    total_shipping_fee = shipping_fee * num_sellers
+        seller = item.product.seller
+        seller_location = get_user_location(seller)
+        seller_locations[seller.id] = seller_location
+        
+        if user_location == seller_location:
+            shipping_fee = 200
+        elif (user_location == "Luzon" and seller_location == "Mindanao") or (user_location == "Mindanao" and seller_location == "Luzon"):
+            shipping_fee = 800
+        else:
+            shipping_fee = 500
+        
+        total_shipping_fee += shipping_fee
 
     return render(request, 'core/cart.html', {
         'cart_items': cart_items,
         'total_price': total_price,
         'shipping_fee': total_shipping_fee,
         'user_location': user_location,
+        'seller_locations': seller_locations,
     })
 
 def get_user_location(user):
