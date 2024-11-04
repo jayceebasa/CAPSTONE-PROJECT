@@ -1884,6 +1884,13 @@
 
     <script>
       function submitSubscription() {
+        const userAddress = "{{ user.address }}";
+        if (!userAddress) {
+          alert("Please add an address to proceed with the subscription.");
+          window.location.href = "{% url 'core:profile' %}";
+          return;
+        }
+
         const proofOfPaymentInput = document.getElementById("proofOfPaymentInput");
         if (proofOfPaymentInput.files.length === 0) {
           alert("Please upload proof of payment.");

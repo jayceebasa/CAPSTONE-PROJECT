@@ -671,6 +671,7 @@ def create_stripe_session(request):
 @login_required
 def checkout(request):
     if request.method == 'POST':
+    
         item_ids = request.POST.get("item_ids")
         proof_of_payment = request.FILES.get("proof_of_payment")
 

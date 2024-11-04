@@ -269,6 +269,14 @@
             document.getElementById("checkoutButton").addEventListener("click", function (event) {
               event.preventDefault(); // Prevent the default anchor behavior
 
+              // Check if the user has an address
+              var userAddress = "{{ user.address }}";
+              if (!userAddress) {
+                alert("Please add an address to proceed with the checkout.");
+                window.location.href = "{% url 'core:users' %}";
+                return;
+              }
+
               // Check if any products are selected
               const selectedItems = document.querySelectorAll(".select-product:checked");
               if (selectedItems.length === 0) {
