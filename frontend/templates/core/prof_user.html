@@ -861,7 +861,7 @@
                           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                           <button type="button" class="btn btn-primary" id="inTransitButton" style="display: none">In Transit</button>
                           <button type="button" class="btn btn-success" id="deliveredButton" style="display: none">Delivered</button>
-                          <button type="button" class="btn btn-danger" id="cancelOrderButton" data-order-number="{{ order_number }}">Cancel Order</button>
+                          <button type="button" class="btn btn-danger" id="cancelOrderButton">Cancel Order</button>
                           <button type="button" class="btn btn-info" id="viewReceiptButton">View Receipt</button>
                         </div>
                       </div>
@@ -1228,5 +1228,31 @@
     <script src="{% static 'assets/js/main.js' %}"></script>
     <script src="https://unpkg.com/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{% static 'assets/js/prof_user.js' %}"></script>
+    <script>
+      $(document).ready(function () {
+        // Function to set the active tab from local storage
+        function setActiveTab() {
+          var activeTab = localStorage.getItem("activeTab");
+          if (activeTab) {
+            // Hide all tab contents
+            $('.tab-pane').removeClass('show active');
+            
+            // Show the active tab content
+            var tabElement = $('[data-bs-target="' + activeTab + '"]');
+            tabElement.tab("show");
+            $(activeTab).addClass('show active');
+          }
+        }
+    
+        // Set the active tab on page load
+        setActiveTab();
+    
+        // Store the active tab in local storage when a tab is clicked
+        $('button[data-bs-toggle="tab"]').on("shown.bs.tab", function (event) {
+          var activeTab = $(event.target).data("bs-target");
+          localStorage.setItem("activeTab", activeTab);
+        });
+      });
+    </script>
   </body>
 </html>
