@@ -106,12 +106,12 @@ def index(request):
 
 @login_required
 def shop_view(request):
-    products_list = Product.objects.all()
-    product_types = Product.objects.values_list('type', flat=True).distinct()
+    products_list = Product.objects.filter(seller__is_subscribed=True)
+    product_types = Product.objects.filter(seller__is_subscribed=True).values_list('type', flat=True).distinct()
     
     max_price = products_list.aggregate(Max('price'))['price__max']
     
-# Add a formatted price attribute for each product
+    # Add a formatted price attribute for each product
     for product in products_list:
         product.formatted_price = "₱{:,.2f}".format(product.price)
     
