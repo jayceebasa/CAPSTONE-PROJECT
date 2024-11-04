@@ -302,11 +302,19 @@
                       </div>
                       <div class="col-12 col-md-4">
                         <label for="inputPhone" class="form-label">Phone</label>
-                        <input type="tel" class="form-control" id="inputPhone" name="PhoneNumber" value="{{ user.PhoneNumber }}" />
+                        <input
+                          type="tel"
+                          class="form-control"
+                          id="inputPhone"
+                          name="PhoneNumber"
+                          placeholder="Phone number"
+                          value="{{ user.PhoneNumber|default_if_none:'' }}"
+                          pattern="[0-9]{11}"
+                          title="Please enter exactly 11 digits" />
                       </div>
                       <div class="col-12 col-md-4">
                         <label for="inputEmail" class="form-label">Email</label>
-                        <input type="email" class="form-control" id="inputEmail" name="email" value="{{ user.email }}" />
+                        <input type="email" class="form-control" id="inputEmail" name="email" value="{{ user.email }}" readonly />
                       </div>
 
                       <input type="hidden" id="hiddenAddress" name="address" value="{{ user.address }}" />
