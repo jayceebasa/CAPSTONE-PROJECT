@@ -292,6 +292,16 @@ def update_order_status(request, order_number):
         return JsonResponse({'success': True})
     return JsonResponse({'success': False, 'error': 'Invalid status'})
 
+@csrf_exempt
+@require_POST
+@login_required
+def cancel_order(request, order_number):
+    transactions = Transaction.objects.filter(order_number=order_number, user=request.user)
+    if not transactions.exists():
+        return JsonResponse({'success': False, 'error': 'Order not found or you do not have permission to cancel this order.'})
+
+    transactions.update(status='Cancelled')
+    return JsonResponse({'success': True})
 
 @csrf_exempt
 @require_POST

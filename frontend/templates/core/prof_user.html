@@ -850,7 +850,7 @@
                           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                           <button type="button" class="btn btn-primary" id="inTransitButton" style="display: none">In Transit</button>
                           <button type="button" class="btn btn-success" id="deliveredButton" style="display: none">Delivered</button>
-                          <button type="button" class="btn btn-danger" id="cancelOrderButton" style="display: none">Cancel Order</button>
+                          <button type="button" class="btn btn-danger" id="cancelOrderButton" data-order-number="{{ order_number }}">Cancel Order</button>
                           <button type="button" class="btn btn-info" id="viewReceiptButton">View Receipt</button>
                         </div>
                       </div>
@@ -874,6 +874,7 @@
 
                   <script>
                     document.addEventListener("DOMContentLoaded", function () {
+                      const cancelOrderButton = document.getElementById("cancelOrderButton");
                       // Event delegation for view order buttons
                       document.querySelector("#transaction-tab-pane").addEventListener("click", function (event) {
                         if (event.target.classList.contains("view-order-btn")) {
@@ -917,7 +918,17 @@
                                   ? `<div id="proofOfPaymentContainer"><h5>Proof of Payment</h5><img id="proofOfPaymentImage" src="${data.proof_of_payment}" alt="Proof of Payment" class="img-fluid" /></div>`
                                   : ""
                               }
+                              
                             `;
+
+                            // Conditionally display the Cancel Order button
+                           
+                            if (data.status === "processing") {
+                              cancelOrderButton.style.display = "inline-block";
+                            } else {
+                              cancelOrderButton.style.display = "none";
+                            }
+
                             // Set up the View Receipt button
                             const viewReceiptButton = document.getElementById("viewReceiptButton");
                             viewReceiptButton.onclick = function () {
@@ -940,6 +951,32 @@
                             const modal = document.getElementById("orderDetailsModal");
                             const bootstrapModal = new bootstrap.Modal(modal);
                             bootstrapModal.show();
+
+                            // Add event listener for the Cancel Order button
+                            if (cancelOrderButton) {
+                              cancelOrderButton.addEventListener("click", function () { 
+                                if (confirm("Are you sure you want to cancel this order?")) {
+                                  fetch(`/cancel-order/${orderNumber}/`, {
+                                    method: "POST",
+                                    headers: {
+                                      "Content-Type": "application/json",
+                                      "X-CSRFToken": getCookie("csrftoken"), // Ensure you have a function to get the CSRF token
+                                    },
+                                    body: JSON.stringify({ status: "Cancelled" }),
+                                  })
+                                    .then((response) => response.json())
+                                    .then((data) => {
+                                      if (data.success) {
+                                        alert("Order cancelled successfully.");
+                                        location.reload(); // Reload the page to reflect the changes
+                                      } else {
+                                        alert("Failed to cancel the order.");
+                                      }
+                                    })
+                                    .catch((error) => console.error("Error:", error));
+                                }
+                              });
+                            }
                           })
                           .catch((error) => console.error("Error fetching order details:", error));
                       }
@@ -961,6 +998,21 @@
                         document.body.classList.remove("modal-open");
                         document.body.style.paddingRight = "";
                       });
+
+                      function getCookie(name) {
+                        let cookieValue = null;
+                        if (document.cookie && document.cookie !== "") {
+                          const cookies = document.cookie.split(";");
+                          for (let i = 0; i < cookies.length; i++) {
+                            const cookie = cookies[i].trim();
+                            if (cookie.substring(0, name.length + 1) === name + "=") {
+                              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                              break;
+                            }
+                          }
+                        }
+                        return cookieValue;
+                      }
                     });
                   </script>
                 </div>
