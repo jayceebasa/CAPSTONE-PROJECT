@@ -812,8 +812,8 @@
                         style="margin-bottom: 10px; margin-right: 20px">
                         Add Product
                       </button>
-                      <div style="display: inline-block;">
-                        {{subscription_end_date}}
+                      <div style="display: inline-block">
+                        <span style="float: right"><strong>Subscription end date:</strong> {{subscription_end_date}}</span>
                       </div>
                       <div class="modal fade" id="addProductModal" tabindex="-1" aria-labelledby="addProductModalLabel" aria-hidden="true">
                         <div class="modal-dialog">
@@ -1975,10 +1975,10 @@
                 const timeDifference = subscriptionEndDate - currentDate;
                 const daysDifference = Math.ceil(timeDifference / (1000 * 60 * 60 * 24));
                 console.log("Days Difference:", daysDifference); // Debugging statement
-                
+
                 const isSubscribed = "{{ is_subscribed }}" === "True";
                 const subscriptionPayment = "{{ subscription_payment }}";
-                
+
                 if (daysDifference <= 3 && isSubscribed && subscriptionEndDate && !subscriptionPayment) {
                   const button = document.createElement("button");
                   button.textContent = "Subscribe in advance";

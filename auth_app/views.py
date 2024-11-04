@@ -1346,7 +1346,12 @@ def accept_subscription(request, user_id):
         user = get_object_or_404(User, id=user_id)
         user.is_subscribed = True
         user.subscription_payment = None
-        user.subscription_end_date = timezone.now() + timedelta(days=30)
+        
+        if user.subscription_end_date:
+            user.subscription_end_date += timedelta(days=30)
+        else:
+            user.subscription_end_date = timezone.now() + timedelta(days=30)
+        
         user.save()
         return JsonResponse({"success": True})
     return JsonResponse({"success": False, "message": "Invalid request method"}, status=400)
