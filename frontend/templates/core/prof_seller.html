@@ -799,15 +799,22 @@
                     {% if not user.is_subscribed and not is_waiting_for_verification %}
                     <div class="alert alert-warning" role="alert">You need to subscribe to be able to sell your products.</div>
                     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#subscribeModal">Subscribe</button>
-                    {% elif is_waiting_for_verification %}
+                    {% elif is_waiting_for_verification and not user.is_subscribed %}
                     <div class="alert alert-info" role="alert">Waiting for admin to verify your subscription.</div>
                     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#subscribeModal">Resend Proof of Payment</button>
                     {% else %}
                     <div class="table-responsive mt-3">
-                      <button type="button" class="btn btn-primary addProduct" data-bs-toggle="modal" data-bs-target="#addProductModal" style="margin-bottom: 10px; margin-right: 20px">
+                      <button
+                        type="button"
+                        class="btn btn-primary addProduct"
+                        data-bs-toggle="modal"
+                        data-bs-target="#addProductModal"
+                        style="margin-bottom: 10px; margin-right: 20px">
                         Add Product
                       </button>
-
+                      <div style="display: inline-block;">
+                        {{subscription_end_date}}
+                      </div>
                       <div class="modal fade" id="addProductModal" tabindex="-1" aria-labelledby="addProductModalLabel" aria-hidden="true">
                         <div class="modal-dialog">
                           <div class="modal-content">
@@ -1957,10 +1964,10 @@
               } else if (data.message) {
                 console.log(data.message);
               }
-      
+              console.log("Subscription End Date (raw):", data.subscription_end_date); // Debugging statement
 
-              if ('{{ subscription_end_date }}') {
-                const subscriptionEndDate = moment('{{ subscription_end_date }}', "MMM. D, YYYY, h:mm a").toDate(); // Convert to Date object
+              if ("{{subscription_end_date}}") {
+                const subscriptionEndDate = moment("{{subscription_end_date}}", "MMM. D, YYYY, h:mm a").toDate(); // Convert to Date object
                 const currentDate = new Date();
                 console.log("Subscription End Date:", subscriptionEndDate); // Debugging statement
                 console.log("Current Date:", currentDate); // Debugging statement
@@ -1968,21 +1975,30 @@
                 const timeDifference = subscriptionEndDate - currentDate;
                 const daysDifference = Math.ceil(timeDifference / (1000 * 60 * 60 * 24));
                 console.log("Days Difference:", daysDifference); // Debugging statement
-
-                if (daysDifference <= 3) {
+                
+                const isSubscribed = "{{ is_subscribed }}" === "True";
+                const subscriptionPayment = "{{ subscription_payment }}";
+                
+                if (daysDifference <= 3 && isSubscribed && subscriptionEndDate && !subscriptionPayment) {
                   const button = document.createElement("button");
                   button.textContent = "Subscribe in advance";
                   button.className = "btn btn-warning";
                   button.addEventListener("click", function () {
-                    extendSubscription(subscriptionEndDate);
+                    submitSubscription();
                   });
 
                   // Find the "Add to cart" button and append the "Subscribe in advance" button next to it
                   const addToCartButton = document.querySelector(".addProduct");
                   if (addToCartButton) {
-                    button.style.marginTop = "-10px";
-                    addToCartButton.parentNode.insertBefore(button, addToCartButton.nextSibling);
-                    console.log("Button appended next to the Add to cart button"); // Debugging statement
+                    const subscribeButton = document.createElement("button");
+                    subscribeButton.textContent = "Subscribe in advance";
+                    subscribeButton.className = "btn btn-primary";
+                    subscribeButton.style.marginTop = "-10px";
+                    subscribeButton.setAttribute("data-bs-toggle", "modal");
+                    subscribeButton.setAttribute("data-bs-target", "#subscribeModal");
+
+                    addToCartButton.parentNode.insertBefore(subscribeButton, addToCartButton.nextSibling);
+                    console.log("Subscribe in advance button appended next to the Add to cart button"); // Debugging statement
                   } else {
                     console.error("Add to cart button not found"); // Debugging statement
                   }
