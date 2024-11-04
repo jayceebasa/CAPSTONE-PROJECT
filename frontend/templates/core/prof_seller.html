@@ -1310,7 +1310,7 @@
                             <td>{{ transaction.order_number }}</td>
                             <td>{{ transaction.date }}</td>
                             <td>{{ transaction.total_quantity }}</td>
-                            <td>{{ transaction.formatted_total_amount }}</td>
+                            <td>{{ transaction.formatted_total_amount_with_shipping }}</td>
                             <td>{{ transaction.status }}</td>
                             <td>
                               <div class="btn-group" role="group">
@@ -1321,7 +1321,7 @@
                                   data-bs-target="#orderDetailsModal">
                                   View Order
                                 </button>
-                                {% if transaction.status == 'cancelled' %}
+                                {% if transaction.status == 'Cancelled' or transaction.status == "Delivered" %}
                                 <button class="btn btn-sm btn-danger remove-transaction-btn" data-order="{{ transaction.order_number }}">
                                   <i class="fas fa-trash-alt"></i>
                                 </button>

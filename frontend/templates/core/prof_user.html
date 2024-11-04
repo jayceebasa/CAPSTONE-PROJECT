@@ -786,6 +786,11 @@
                                   data-bs-target="#orderDetailsModal">
                                   View Order
                                 </button>
+                                {% if order.status == "Cancelled" or order.status == "Delivered" %}
+                                <button class="btn btn-sm btn-danger delete-order-btn" data-order-number="{{ order.order_number }}">
+                                  <i class="fas fa-trash-alt"></i>
+                                </button>
+                                {% endif %}
                               </div>
                             </td>
                           </tr>
@@ -793,6 +798,12 @@
                         </tbody>
                       </table>
                     </div>
+
+                    <style>
+                      .btn-group .btn {
+                          white-space: nowrap;
+                      }
+                  </style>
                     <!-- Pagination Controls -->
                     <nav aria-label="Page navigation" id="paginationContainer">
                       <ul class="pagination justify-content-center">
@@ -875,6 +886,7 @@
                   <script>
                     document.addEventListener("DOMContentLoaded", function () {
                       const cancelOrderButton = document.getElementById("cancelOrderButton");
+                      const deleteButtons = document.querySelectorAll(".delete-order-btn");
                       // Event delegation for view order buttons
                       document.querySelector("#transaction-tab-pane").addEventListener("click", function (event) {
                         if (event.target.classList.contains("view-order-btn")) {
@@ -922,7 +934,7 @@
                             `;
 
                             // Conditionally display the Cancel Order button
-                           
+
                             if (data.status === "processing") {
                               cancelOrderButton.style.display = "inline-block";
                             } else {
@@ -954,7 +966,7 @@
 
                             // Add event listener for the Cancel Order button
                             if (cancelOrderButton) {
-                              cancelOrderButton.addEventListener("click", function () { 
+                              cancelOrderButton.addEventListener("click", function () {
                                 if (confirm("Are you sure you want to cancel this order?")) {
                                   fetch(`/cancel-order/${orderNumber}/`, {
                                     method: "POST",
@@ -980,6 +992,33 @@
                           })
                           .catch((error) => console.error("Error fetching order details:", error));
                       }
+
+                      deleteButtons.forEach((button) => {
+                        button.addEventListener("click", function () {
+                          const orderNumber = this.getAttribute("data-order-number");
+
+                          if (confirm("Are you sure you want to delete this transaction?")) {
+                            fetch(`/remove_transaction/${orderNumber}/`, {
+                              method: "POST",
+                              headers: {
+                                "X-CSRFToken": getCookie("csrftoken"),
+                              },
+                            })
+                              .then((response) => response.json())
+                              .then((data) => {
+                                if (data.success) {
+                                  window.location.reload();
+                                } else {
+                                  alert("Error deleting transaction: " + data.error);
+                                }
+                              })
+                              .catch((error) => {
+                                console.error("Error:", error);
+                                alert("Error deleting transaction");
+                              });
+                          }
+                        });
+                      });
 
                       // Add event listener to close the proof of payment modal when the view order modal is hidden
                       const viewOrderModal = document.getElementById("orderDetailsModal");

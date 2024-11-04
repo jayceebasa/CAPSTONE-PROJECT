@@ -203,11 +203,14 @@ def seller_profile(request):
     for order_number, items in grouped_transactions.items():
         total_amount = sum(item.amount for item in items)
         total_quantity = sum(item.quantity for item in items)
+        shipping_fee = items[0].shipping_fee  # Only get the shipping fee of the first item
+        total_amount_with_shipping = total_amount + shipping_fee
         grouped_transactions_list.append({
             'order_number': order_number,
             'items': items,
             'total_amount': total_amount,
             'formatted_total_amount': "₱{:,.2f}".format(total_amount),  # Add formatted price
+            'formatted_total_amount_with_shipping': "₱{:,.2f}".format(total_amount_with_shipping),
             'total_quantity': total_quantity,
             'date': items[0].date,
             'status': items[0].status,
@@ -307,9 +310,11 @@ def cancel_order(request, order_number):
 @require_POST
 @login_required
 def remove_transaction(request, order_number):
-    transactions = Transaction.objects.filter(order_number=order_number, product__seller=request.user)
+    transactions = Transaction.objects.filter(order_number=order_number).filter(
+        Q(user=request.user) | Q(product__seller=request.user)
+    )
     if not transactions.exists():
-        return JsonResponse({'error': 'Transaction not found'}, status=404)
+        return JsonResponse({'error': 'Transaction not found or you do not have permission to delete this transaction.'}, status=404)
 
     transactions.delete()
     return JsonResponse({'success': True})
