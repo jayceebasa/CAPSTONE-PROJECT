@@ -851,107 +851,122 @@
 
                   <script>
                     document.addEventListener("DOMContentLoaded", function () {
-                      const viewOrderButtons = document.querySelectorAll(".view-order-btn");
-                      const proofOfPaymentModal = document.getElementById("proofOfPaymentModal");
-                      const proofOfPaymentImage = document.getElementById("proofOfPaymentImage");
-                      const proofOfPaymentContainer = document.getElementById("proofOfPaymentContainer");
-
-
-                      viewOrderButtons.forEach((button) => {
-                        button.addEventListener("click", function () {
-                          const orderNumber = this.getAttribute("data-order");
-
-                          fetch(`/get_order_details/${orderNumber}/`)
-                            .then((response) => response.json())
-                            .then((data) => {
-                              const orderDetailsContent = document.getElementById("orderDetailsContent");
-                              orderDetailsContent.innerHTML = `
-              <p><strong>Order Number:</strong> ${data.order_number}</p>
-              <p><strong>Date:</strong> ${data.date}</p>
-              <p><strong>Status:</strong> ${data.status}</p>
-              <p><strong>User:</strong> ${data.user.first_name} ${data.user.last_name}</p>
-              <p><strong>Address:</strong> ${data.user.address}</p>
-              <h5>Items:</h5>
-              <ul>
-                ${data.items
-                  .map(
-                    (item) => `
-                  <li>
-                    <img src="${item.product.image_url}" alt="${item.product.name}" style="width: 100px; height: 100px;" />
-                    ${item.product.name} - ${item.product.formatted_price} (Quantity: ${item.quantity})
-                  </li>
-                `
-                  )
-                  .join("")}
-              </ul>
-              <p><strong>Total Quantity:</strong> ${data.total_quantity}</p>
-              <p><strong>Total Amount:</strong> ${data.formatted_total_amount}</p>
-              <p><strong>Shipping Fee:</strong> ${data.shipping_fee}</p>
-              <p><strong>Total Amount with Shipping:</strong> ${data.total_amount_with_shipping}</p>
-              ${
-                data.proof_of_payment
-                  ? `<div id="proofOfPaymentContainer"><h5>Proof of Payment</h5><img id="proofOfPaymentImage" src="${data.proof_of_payment}" alt="Proof of Payment" class="img-fluid" /></div>`
-                  : ""
-              }
-            `;
-
-                              // Conditionally display the In Transit and Cancel Order buttons
-
-                              const cancelOrderButton = document.getElementById("cancelOrderButton");
-                              if (data.status === "processing") {
-                                cancelOrderButton.style.display = "inline-block";
-                              } else {
-                                cancelOrderButton.style.display = "none";
-                              }
-
-                              // Set up the Cancel Order button
-                              cancelOrderButton.onclick = function () {
-                                fetch(`/update_order_status/${orderNumber}/`, {
-                                  method: "POST",
-                                  headers: {
-                                    "Content-Type": "application/json",
-                                    "X-CSRFToken": "{{ csrf_token }}",
-                                  },
-                                  body: JSON.stringify({ status: "cancelled" }),
-                                })
-                                  .then((response) => response.json())
-                                  .then((data) => {
-                                    if (data.success) {
-                                      alert("Order status updated to Cancelled");
-                                      location.reload();
-                                    } else {
-                                      alert("Failed to update order status");
-                                    }
-                                  });
-                              };
-
-                              // Set up the View Receipt button
-                              const viewReceiptButton = document.getElementById("viewReceiptButton");
-                              viewReceiptButton.onclick = function () {
-                                fetch(`/get_proof_of_payment/${data.items[0].id}/`)
-                                  .then((response) => response.json())
-                                  .then((data) => {
-                                    if (data.proof_of_payment_url) {
-                                      const proofOfPaymentContainer = document.getElementById("proofOfPaymentContainer");
-                                      const proofOfPaymentImage = document.getElementById("proofOfPaymentImage");
-                                      proofOfPaymentImage.src = data.proof_of_payment_url;
-                                      proofOfPaymentImage.style.display = "block"; // Ensure the image is displayed
-                                      proofOfPaymentContainer.style.display = "block";
-                                    } else {
-                                      alert("No proof of payment available");
-                                    }
-                                  });
-                              };
-                            });
-                        });
+                      // Event delegation for view order buttons
+                      document.querySelector("#transaction-tab-pane").addEventListener("click", function (event) {
+                        if (event.target.classList.contains("view-order-btn")) {
+                          const orderNumber = event.target.getAttribute("data-order");
+                          // Fetch and display order details using orderNumber
+                          fetchOrderDetails(orderNumber);
+                        }
                       });
+
+                      // Function to fetch and display order details
+                      function fetchOrderDetails(orderNumber) {
+                        fetch(`/get_order_details/${orderNumber}/`)
+                          .then((response) => response.json())
+                          .then((data) => {
+                            const orderDetailsContent = document.getElementById("orderDetailsContent");
+                            orderDetailsContent.innerHTML = `
+                              <p><strong>Order Number:</strong> ${data.order_number}</p>
+                              <p><strong>Date:</strong> ${data.date}</p>
+                              <p><strong>Status:</strong> ${data.status}</p>
+                              <p><strong>User:</strong> ${data.user.first_name} ${data.user.last_name}</p>
+                              <p><strong>Address:</strong> ${data.user.address}</p>
+                              <h5>Items:</h5>
+                              <ul>
+                                ${data.items
+                                  .map(
+                                    (item) => `
+                                  <li>
+                                    <img src="${item.product.image_url}" alt="${item.product.name}" style="width: 100px; height: 100px;" />
+                                    ${item.product.name} - ${item.product.formatted_price} (Quantity: ${item.quantity})
+                                  </li>
+                                `
+                                  )
+                                  .join("")}
+                              </ul>
+                              <p><strong>Total Quantity:</strong> ${data.total_quantity}</p>
+                              <p><strong>Total Amount:</strong> ${data.formatted_total_amount}</p>
+                              <p><strong>Shipping Fee:</strong> ${data.shipping_fee}</p>
+                              <p><strong>Total Amount with Shipping:</strong> ${data.total_amount_with_shipping}</p>
+                              ${
+                                data.proof_of_payment
+                                  ? `<div id="proofOfPaymentContainer"><h5>Proof of Payment</h5><img id="proofOfPaymentImage" src="${data.proof_of_payment}" alt="Proof of Payment" class="img-fluid" /></div>`
+                                  : ""
+                              }
+                            `;
+
+                            // Conditionally display the In Transit and Cancel Order buttons
+                            const cancelOrderButton = document.getElementById("cancelOrderButton");
+                            if (data.status === "processing") {
+                              cancelOrderButton.style.display = "inline-block";
+                            } else {
+                              cancelOrderButton.style.display = "none";
+                            }
+
+                            // Set up the Cancel Order button
+                            cancelOrderButton.onclick = function () {
+                              fetch(`/update_order_status/${orderNumber}/`, {
+                                method: "POST",
+                                headers: {
+                                  "Content-Type": "application/json",
+                                  "X-CSRFToken": "{{ csrf_token }}",
+                                },
+                                body: JSON.stringify({ status: "cancelled" }),
+                              })
+                                .then((response) => response.json())
+                                .then((data) => {
+                                  if (data.success) {
+                                    alert("Order status updated to Cancelled");
+                                    location.reload();
+                                  } else {
+                                    alert("Failed to update order status");
+                                  }
+                                });
+                            };
+
+                            // Set up the View Receipt button
+                            const viewReceiptButton = document.getElementById("viewReceiptButton");
+                            viewReceiptButton.onclick = function () {
+                              fetch(`/get_proof_of_payment/${data.items[0].id}/`)
+                                .then((response) => response.json())
+                                .then((data) => {
+                                  if (data.proof_of_payment_url) {
+                                    const proofOfPaymentContainer = document.getElementById("proofOfPaymentContainer");
+                                    const proofOfPaymentImage = document.getElementById("proofOfPaymentImage");
+                                    proofOfPaymentImage.src = data.proof_of_payment_url;
+                                    proofOfPaymentImage.style.display = "block"; // Ensure the image is displayed
+                                    proofOfPaymentContainer.style.display = "block";
+                                  } else {
+                                    alert("No proof of payment available");
+                                  }
+                                });
+                            };
+
+                            // Show the modal
+                            const modal = document.getElementById("orderDetailsModal");
+                            const bootstrapModal = new bootstrap.Modal(modal);
+                            bootstrapModal.show();
+                          })
+                          .catch((error) => console.error("Error fetching order details:", error));
+                      }
 
                       // Add event listener to close the proof of payment modal when the view order modal is hidden
                       const viewOrderModal = document.getElementById("orderDetailsModal");
                       viewOrderModal.addEventListener("hidden.bs.modal", function () {
+                        const proofOfPaymentImage = document.getElementById("proofOfPaymentImage");
+                        const proofOfPaymentContainer = document.getElementById("proofOfPaymentContainer");
                         proofOfPaymentImage.src = ""; // Reset the proof of payment image source
                         proofOfPaymentImage.style.display = "none"; // Hide the image element
                         proofOfPaymentContainer.style.display = "none"; // Hide the container
+
+                        // Manually remove the modal backdrop
+                        const modalBackdrop = document.querySelector(".modal-backdrop");
+                        if (modalBackdrop) {
+                          modalBackdrop.parentNode.removeChild(modalBackdrop);
+                        }
+                        document.body.classList.remove("modal-open");
+                        document.body.style.paddingRight = "";
                       });
                     });
                   </script>
