@@ -716,7 +716,7 @@
                               name="new_password"
                               required
                               pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}"
-                              title="Must contain at least one number, one uppercase letter, one lowercase letter, one special character, and at least 8 or more characters" />/>
+                              title="Must contain at least one number, one uppercase letter, one lowercase letter, one special character, and at least 8 or more characters" />
                             <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('newPassword')">
                               <i class="bi bi-eye"></i>
                             </button>
@@ -732,7 +732,7 @@
                               name="confirm_password"
                               required
                               pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}"
-                              title="Must contain at least one number, one uppercase letter, one lowercase letter, one special character, and at least 8 or more characters" />/>
+                              title="Must contain at least one number, one uppercase letter, one lowercase letter, one special character, and at least 8 or more characters" />
                             <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('confirmPassword')">
                               <i class="bi bi-eye"></i>
                             </button>
@@ -849,6 +849,7 @@
                         <div class="modal-footer">
                           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                           <button type="button" class="btn btn-primary" id="inTransitButton" style="display: none">In Transit</button>
+                          <button type="button" class="btn btn-success" id="deliveredButton" style="display: none">Delivered</button>
                           <button type="button" class="btn btn-danger" id="cancelOrderButton" style="display: none">Cancel Order</button>
                           <button type="button" class="btn btn-info" id="viewReceiptButton">View Receipt</button>
                         </div>
@@ -917,36 +918,6 @@
                                   : ""
                               }
                             `;
-
-                            // Conditionally display the In Transit and Cancel Order buttons
-                            const cancelOrderButton = document.getElementById("cancelOrderButton");
-                            if (data.status === "processing") {
-                              cancelOrderButton.style.display = "inline-block";
-                            } else {
-                              cancelOrderButton.style.display = "none";
-                            }
-
-                            // Set up the Cancel Order button
-                            cancelOrderButton.onclick = function () {
-                              fetch(`/update_order_status/${orderNumber}/`, {
-                                method: "POST",
-                                headers: {
-                                  "Content-Type": "application/json",
-                                  "X-CSRFToken": "{{ csrf_token }}",
-                                },
-                                body: JSON.stringify({ status: "cancelled" }),
-                              })
-                                .then((response) => response.json())
-                                .then((data) => {
-                                  if (data.success) {
-                                    alert("Order status updated to Cancelled");
-                                    location.reload();
-                                  } else {
-                                    alert("Failed to update order status");
-                                  }
-                                });
-                            };
-
                             // Set up the View Receipt button
                             const viewReceiptButton = document.getElementById("viewReceiptButton");
                             viewReceiptButton.onclick = function () {
@@ -1137,60 +1108,6 @@
     <!-- main js -->
     <script src="{% static 'assets/js/main.js' %}"></script>
     <script src="https://unpkg.com/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-      // Handle Delivered button click to change status
-      document.querySelectorAll(".change-status-btn").forEach(function (button) {
-        button.addEventListener("click", function () {
-          var transactionId = this.getAttribute("data-transaction-id");
-          console.log("Button clicked for transaction ID:", transactionId); // Debugging log
-
-          // Fetch the CSRF token from the cookie
-          const getCookie = (name) => {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== "") {
-              const cookies = document.cookie.split(";");
-              for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === name + "=") {
-                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                  break;
-                }
-              }
-            }
-            return cookieValue;
-          };
-
-          const csrfToken = getCookie("csrftoken");
-
-          fetch("{% url 'core:change_status_delivered' %}", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-CSRFToken": csrfToken,
-            },
-            body: JSON.stringify({
-              transaction_id: transactionId,
-              status: "Delivered",
-            }),
-          })
-            .then((response) => response.json())
-            .then((data) => {
-              if (data.success) {
-                console.log("Status changed successfully"); // Debugging log
-                localStorage.setItem("activeTab", "#transaction-tab-pane"); // Ensure the active tab is set
-                location.reload(); // Reload the page to show the updated status
-              } else {
-                console.error("Error:", data.error); // Debugging log
-                alert("Error: " + data.error);
-              }
-            })
-            .catch((error) => {
-              console.error("Error:", error); // Debugging log
-              alert("An error occurred. Please try again.");
-            });
-        });
-      });
-    </script>
     <script src="{% static 'assets/js/prof_user.js' %}"></script>
   </body>
 </html>

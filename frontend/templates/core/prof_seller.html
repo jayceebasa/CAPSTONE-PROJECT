@@ -768,7 +768,7 @@
                             name="current_password"
                             required
                             pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}"
-                            title="Must contain at least one number, one uppercase letter, one lowercase letter, one special character, and at least 8 or more characters" />/>
+                            title="Must contain at least one number, one uppercase letter, one lowercase letter, one special character, and at least 8 or more characters" />
                         </div>
                         <div class="col-12">
                           <label for="newPassword" class="form-label">New Password</label>
@@ -783,7 +783,7 @@
                             name="confirm_password"
                             required
                             pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}"
-                            title="Must contain at least one number, one uppercase letter, one lowercase letter, one special character, and at least 8 or more characters" />/>
+                            title="Must contain at least one number, one uppercase letter, one lowercase letter, one special character, and at least 8 or more characters" />
                         </div>
                         <div class="col-12">
                           <button type="submit" class="btn btn-primary">Change Password</button>
@@ -1484,7 +1484,7 @@
                       "Content-Type": "application/json",
                       "X-CSRFToken": "{{ csrf_token }}",
                     },
-                    body: JSON.stringify({ status: "cancelled" }),
+                    body: JSON.stringify({ status: "Cancelled" }),
                   })
                     .then((response) => response.json())
                     .then((data) => {
