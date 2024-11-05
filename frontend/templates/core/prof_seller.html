@@ -1887,7 +1887,7 @@
         const userAddress = "{{ user.address }}";
         if (!userAddress) {
           alert("Please add an address to proceed with the subscription.");
-          window.location.href = "{% url 'core:profile' %}";
+          window.location.href = "{% url 'core:sellers' %}";
           return;
         }
 

@@ -710,14 +710,23 @@
             <!-- Image and QR Code Upload Section -->
             <div class="card mt-4">
               <div class="card-body">
-                <h5 class="card-title">Upload Image and QR Code</h5>
+                <h5 class="card-title">Upload QR Code</h5>
 
                 <!-- Image and QR Code Upload Form -->
                 <form id="upload-form" method="post" enctype="multipart/form-data">
                   {% csrf_token %}
                   <div class="mb-3">
                     <label for="qrCode">QR Code:</label>
-                    <input type="file" name="qrcode" id="qrCode" class="form-control" accept="image/*" required />
+                    <input type="file" name="qrcode" id="qrCode" class="form-control" accept="image/*" required onchange="previewQRCode(event)" />
+                  </div>
+                  <div class="mb-3">
+                    <label for="qrCodePreview">Current QR Code:</label>
+                    <img
+                      id="qrCodePreview"
+                      src="{% if user.qrcode %}{{ user.qrcode.url }}{% else %}# {% endif %}"
+                      alt="QR Code Preview"
+                      class="img-fluid"
+                      style="max-width: 200px; display: {% if user.qrcode %}block{% else %}none{% endif %};" />
                   </div>
                   <button type="submit" class="btn btn-primary">Upload</button>
                 </form>
@@ -726,6 +735,23 @@
                 <div id="upload-message-container" class="d-none mt-3"></div>
               </div>
             </div>
+            <script>
+              function previewQRCode(event) {
+                const qrCodePreview = document.getElementById("qrCodePreview");
+                const file = event.target.files[0];
+                if (file) {
+                  const reader = new FileReader();
+                  reader.onload = function (e) {
+                    qrCodePreview.src = e.target.result;
+                    qrCodePreview.style.display = "block";
+                  };
+                  reader.readAsDataURL(file);
+                } else {
+                  qrCodePreview.src = "#";
+                  qrCodePreview.style.display = "none";
+                }
+              }
+            </script>
           </div>
 
           <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
