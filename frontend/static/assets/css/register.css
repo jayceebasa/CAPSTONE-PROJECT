@@ -1,3 +1,4 @@
+
 .gradient-custom-3 {
   /* fallback for old browsers */
   background: #84fab0;
@@ -38,4 +39,9 @@ body::before {
   filter: blur(0px) brightness(1);
   transform: scale(1.1); /* Scale it up slightly */
   z-index: -1;
+}
+
+/* You can delete this class since we're using the body::before approach instead */
+.background-image-custom {
+  display: none;
 }
