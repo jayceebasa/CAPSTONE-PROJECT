@@ -36,9 +36,31 @@
     <link rel="stylesheet" href="{% static 'assets/css/user.css' %}" />
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      /* Responsive styles for analytics */
+      @media (max-width: 767px) {
+        .card-body {
+          padding: 0.75rem;
+        }
+
+        .row .col-md-6.mb-4 {
+          margin-bottom: 1rem !important;
+        }
+
+        #salesChartTabContent {
+          height: auto;
+          min-height: 250px;
+        }
+
+        #analyticsContent .h3 {
+          font-size: 1.5rem;
+        }
+      }
+    </style>
   </head>
   <body>
-    
     <!-- header -->
     <div class="top-header-area" style="background-color: #051922; margin-top: -20px; padding-bottom: 15px !important">
       <div class="container">
@@ -134,7 +156,7 @@
           </div>
         </div>
       </div>
-      
+
       <div class="container">
         <div class="row gy-4 gy-lg-0">
           <div class="col-12 col-lg-4 col-xl-3">
@@ -281,7 +303,7 @@
                   });
                 </script>
 
-                <div class="tab-content pt-1" id="profileTabContent" style="height: 286px !important">
+                <div class="tab-content pt-1 pb-5 mb-5" id="profileTabContent">
                   <div class="tab-pane fade show active" id="overview-tab-pane" role="tabpanel" aria-labelledby="overview-tab" tabindex="0">
                     <h5 class="mb-3">Profile</h5>
                     <div class="row g-0">
@@ -318,94 +340,258 @@
                       </div>
                     </div>
                   </div>
-                  <script>
-                    document.addEventListener("DOMContentLoaded", function () {
-                      const analyticsTab = document.querySelector('button[data-bs-target="#analytics-tab-pane"]');
-                      if (analyticsTab) {
-                        analyticsTab.addEventListener("shown.bs.tab", function () {
+                    <script>
+                      document.addEventListener("DOMContentLoaded", function () {
+                        // Existing analytics tab click handler
+                        const analyticsTab = document.querySelector('button[data-bs-target="#analytics-tab-pane"]');
+                        if (analyticsTab) {
+                          analyticsTab.addEventListener("shown.bs.tab", function () {
+                            loadAnalyticsData();
+                          });
+                        }
+                        
+                        // Check if analytics tab is active on page load
+                        const activeTab = localStorage.getItem('activeTab');
+                        if (activeTab === '#analytics-tab-pane') {
+                          // If analytics tab should be active, load data immediately
+                          setTimeout(loadAnalyticsData, 300); // Small delay to ensure DOM is ready
+                        }
+                        
+                        // Function to load analytics data
+                        function loadAnalyticsData() {
+                          const content = document.getElementById("analyticsContent");
+                          if (content) {
+                            content.innerHTML = `<p>Loading analytics...</p>`;
+                            
+                            fetch("/seller-analytics/")
+                              .then((response) => response.json())
+                              .then((data) => {
+                                if (data.error) {
+                                  content.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                                } else {
+                                  // Your existing analytics HTML rendering code stays the same
+                                  content.innerHTML = `
+                                    <div class="row">
+                                      <!-- Sales Summary Cards -->
+                                      <div class="col-md-6 mb-4">
+                                        <div class="card border-left-primary shadow h-100 py-2">
+                                          <div class="card-body">
+                                            <div class="row no-gutters align-items-center">
+                                              <div class="col mr-2">
+                                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                                  Total Sales</div>
+                                                <div class="h3 mb-0 font-weight-bold text-gray-800">${data.total_sales}</div>
+                                              </div>
+                                              <div class="col-auto">
+                                                <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                  
+                  <!-- Items Sold Card -->
+                  <div class="col-md-6 mb-4">
+                    <div class="card border-left-success shadow h-100 py-2">
+                      <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                          <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                              Total Items Sold</div>
+                            <div class="h3 mb-0 font-weight-bold text-gray-800">${data.total_items_sold}</div>
+                          </div>
+                          <div class="col-auto">
+                            <i class="fas fa-box fa-2x text-gray-300"></i>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Top Selling Product Card -->
+                <div class="card shadow mb-4">
+                  <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Top Selling Product</h6>
+                  </div>
+                  <div class="card-body">
+                    <div class="row">
+                      <div class="col-md-4 text-center mb-3">
+                        <img src="${data.top_seller_image}" alt="${data.top_seller}" 
+                             class="img-fluid rounded" style="max-height: 180px; max-width: 100%;">
+                      </div>
+                      <div class="col-md-8 d-flex align-items-center">
+                        <div>
+                          <h5 class="font-weight-bold text-dark">${data.top_seller}</h5>
+                          <p class="text-muted">This is your best-selling product. Consider stocking more of this item or creating similar products to increase sales.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Sales Charts -->
+                <div class="card shadow mb-4">
+                  <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Sales Overview</h6>
+                  </div>
+                  <div class="card-body">
+                    <ul class="nav nav-tabs" id="salesChartTab" role="tablist">
+                      <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="daily-tab" data-bs-toggle="tab" 
+                                data-bs-target="#daily-chart" type="button" role="tab" 
+                                aria-controls="daily-chart" aria-selected="true">Daily</button>
+                      </li>
+                      <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="weekly-tab" data-bs-toggle="tab" 
+                                data-bs-target="#weekly-chart" type="button" role="tab" 
+                                aria-controls="weekly-chart" aria-selected="false">Weekly</button>
+                      </li>
+                      <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="monthly-tab" data-bs-toggle="tab" 
+                                data-bs-target="#monthly-chart" type="button" role="tab" 
+                                aria-controls="monthly-chart" aria-selected="false">Monthly</button>
+                      </li>
+                    </ul>
+<div class="tab-content mt-3" id="salesChartTabContent">
+  <div class="tab-pane fade show active" id="daily-chart" role="tabpanel" aria-labelledby="daily-tab">
+    <div style="height: 300px;">
+      <canvas id="dailySalesChart"></canvas>
+    </div>
+  </div>
+  <div class="tab-pane fade" id="weekly-chart" role="tabpanel" aria-labelledby="weekly-tab">
+    <div style="height: 300px;">
+      <canvas id="weeklySalesChart"></canvas>
+    </div>
+  </div>
+  <div class="tab-pane fade" id="monthly-chart" role="tabpanel" aria-labelledby="monthly-tab">
+    <div style="height: 300px;">
+      <canvas id="monthlySalesChart"></canvas>
+    </div>
+  </div>
+</div>
+                </div>
+              `;
+
+                                // Create the charts after the content is added to the DOM
+              // Call createSalesCharts after HTML is populated
+              createSalesCharts(data);
+            }
+          })
+          .catch(() => {
+            content.innerHTML = "<div class='alert alert-danger'>Failed to load analytics.</div>";
+          });
+      }
+    }
+
+                      let dailyChart, weeklyChart, monthlyChart;
+
+                      // Function to create sales charts
+                      function createSalesCharts(data) {
+                        // Destroy existing charts if they exist
+                        if (dailyChart) dailyChart.destroy();
+                        if (weeklyChart) weeklyChart.destroy();
+                        if (monthlyChart) monthlyChart.destroy();
+
+                        // Transform the API data to Chart.js format
+                        const dailyData = {
+                          labels: data.daily_sales.map((item) => item.date),
+                          datasets: [
+                            {
+                              label: "Daily Sales (₱)",
+                              data: data.daily_sales.map((item) => item.sales),
+                              borderColor: "rgb(75, 192, 192)",
+                              backgroundColor: "rgba(75, 192, 192, 0.5)",
+                              tension: 0.1,
+                            },
+                          ],
+                        };
+
+                        const weeklyData = {
+                          labels: data.weekly_sales.map((item) => item.week),
+                          datasets: [
+                            {
+                              label: "Weekly Sales (₱)",
+                              data: data.weekly_sales.map((item) => item.sales),
+                              backgroundColor: "rgba(54, 162, 235, 0.5)",
+                              borderColor: "rgb(54, 162, 235)",
+                              borderWidth: 1,
+                            },
+                          ],
+                        };
+
+                        const monthlyData = {
+                          labels: data.monthly_sales.map((item) => item.month),
+                          datasets: [
+                            {
+                              label: "Monthly Sales (₱)",
+                              data: data.monthly_sales.map((item) => item.sales),
+                              backgroundColor: "rgba(255, 99, 132, 0.5)",
+                              borderColor: "rgb(255, 99, 132)",
+                              borderWidth: 1,
+                            },
+                          ],
+                        };
+
+                        // Chart options with responsive settings
+                        const options = {
+                          responsive: true,
+                          maintainAspectRatio: false,
+                          scales: {
+                            y: {
+                              beginAtZero: true,
+                              ticks: {
+                                callback: function (value) {
+                                  return "₱" + value.toLocaleString();
+                                },
+                              },
+                            },
+                          },
+                        };
+
+                        // Create daily chart
+                        dailyChart = new Chart(document.getElementById("dailySalesChart").getContext("2d"), {
+                          type: "line",
+                          data: dailyData,
+                          options: options,
+                        });
+
+                        // Create weekly chart
+                        weeklyChart = new Chart(document.getElementById("weeklySalesChart").getContext("2d"), {
+                          type: "bar",
+                          data: weeklyData,
+                          options: options,
+                        });
+
+                        // Create monthly chart
+                        monthlyChart = new Chart(document.getElementById("monthlySalesChart").getContext("2d"), {
+                          type: "bar",
+                          data: monthlyData,
+                          options: options,
+                        });
+                      }
+
+                      // Add resize handler
+                      window.addEventListener("resize", function () {
+                        const activeTabPane = document.querySelector(".tab-pane.active");
+                        if (activeTabPane && activeTabPane.id === "analytics-tab-pane") {
+                          // Refresh charts when analytics tab is active and window resizes
                           fetch("/seller-analytics/")
                             .then((response) => response.json())
                             .then((data) => {
-                              const content = document.getElementById("analyticsContent");
-                              if (data.error) {
-                                content.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
-                              } else {
-                                content.innerHTML = `
-                                  <div class="row">
-                                    <!-- Sales Summary Cards -->
-                                    <div class="col-md-6 mb-4">
-                                      <div class="card border-left-primary shadow h-100 py-2">
-                                        <div class="card-body">
-                                          <div class="row no-gutters align-items-center">
-                                            <div class="col mr-2">
-                                              <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                                Total Sales</div>
-                                              <div class="h3 mb-0 font-weight-bold text-gray-800">${data.total_sales}</div>
-                                            </div>
-                                            <div class="col-auto">
-                                              <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                  
-                                    <!-- Items Sold Card -->
-                                    <div class="col-md-6 mb-4">
-                                      <div class="card border-left-success shadow h-100 py-2">
-                                        <div class="card-body">
-                                          <div class="row no-gutters align-items-center">
-                                            <div class="col mr-2">
-                                              <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                                Total Items Sold</div>
-                                              <div class="h3 mb-0 font-weight-bold text-gray-800">${data.total_items_sold}</div>
-                                            </div>
-                                            <div class="col-auto">
-                                              <i class="fas fa-box fa-2x text-gray-300"></i>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                  
-                                  <!-- Top Selling Product Card -->
-                                  <div class="card shadow mb-4">
-                                    <div class="card-header py-3">
-                                      <h6 class="m-0 font-weight-bold text-primary">Top Selling Product</h6>
-                                    </div>
-                                    <div class="card-body">
-                                      <div class="row">
-                                        <div class="col-md-4 text-center mb-3">
-                                          <img src="${data.top_seller_image}" alt="${data.top_seller}" 
-                                               class="img-fluid rounded" style="max-height: 180px; max-width: 100%;">
-                                        </div>
-                                        <div class="col-md-8 d-flex align-items-center">
-                                          <div>
-                                            <h5 class="font-weight-bold text-dark">${data.top_seller}</h5>
-                                            <p class="text-muted">This is your best-selling product. Consider stocking more of this item or creating similar products to increase sales.</p>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>       
-                                `;
-                              }
-                            })
-                            .catch(() => {
-                              document.getElementById("analyticsContent").innerHTML = "<div class='alert alert-danger'>Failed to load analytics.</div>";
+                              createSalesCharts(data);
                             });
-                        });
-                      }
+                        }
+                      });
                     });
                   </script>
                   <div class="tab-pane fade" id="analytics-tab-pane" role="tabpanel" aria-labelledby="analytics-tab" tabindex="0">
                     <h5 class="mb-3">Analytics</h5>
-                    <div id="analyticsContent">
+                    <div id="analyticsContent" class="mb-5 pb-5">
                       <p>Loading analytics...</p>
                     </div>
                   </div>
-                  
+
                   <!-- Address Tab -->
                   <div class="tab-pane fade" id="address-tab-pane" role="tabpanel" aria-labelledby="address-tab" tabindex="0">
                     <div id="addressCardsContainer" class="mb-3">
@@ -597,18 +783,12 @@
                       const exactAddress = document.getElementById("exactAddress").value;
                       const fullAddress = `${exactAddress}, ${barangay}, ${city}, ${province}, ${region}`;
 
-                        // Check if all fields are filled
-                      if (
-                        !regionSelect.value ||
-                        !provinceSelect.value ||
-                        !citySelect.value ||
-                        !barangaySelect.value ||
-                        !exactAddress
-                      ) {
+                      // Check if all fields are filled
+                      if (!regionSelect.value || !provinceSelect.value || !citySelect.value || !barangaySelect.value || !exactAddress) {
                         alert("Please fill in all address fields before saving.");
                         return;
                       }
-                      
+
                       try {
                         const response = await fetch("/save-address/", {
                           method: "POST",
@@ -926,7 +1106,7 @@
                       </button>
                       <script>
                         document.addEventListener("DOMContentLoaded", function () {
-                          var addProductBtn = document.querySelector('.addProduct');
+                          var addProductBtn = document.querySelector(".addProduct");
                           var userAddress = "{{ user.address|escapejs }}";
                           if (addProductBtn) {
                             addProductBtn.addEventListener("mousedown", function (e) {
@@ -939,7 +1119,7 @@
                             });
                           }
                         });
-                        </script>
+                      </script>
                       <div style="display: inline-block">
                         <span style="float: right"><strong>Subscription end date:</strong> {{subscription_end_date}}</span>
                       </div>
@@ -1687,7 +1867,7 @@
     </script>
 
     <!-- footer -->
-    <div class="footer-area" style="margin-top: 300px !important; bottom: 0 !important; width: 100% !important; padding: 10px !important; height: 25%">
+    <div class="footer-area" style="bottom: 0 !important; width: 100% !important; padding: 10px !important; height: 25%">
       <div class="container">
         <div class="row justify-content-center">
           <!-- Add justify-content-center -->

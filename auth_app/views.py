@@ -1433,24 +1433,82 @@ def seller_analytics(request):
         .order_by('-sold')
         .first()
     )
+    
+    # Handle top product data
     if top_product:
         top_seller = top_product['product__name']
-        # Get image URL (handle if image is missing)
         image_url = top_product['product__image']
         if image_url:
-            # If using Django's default storage, prepend MEDIA_URL if not already present
             from django.conf import settings
             if not image_url.startswith('http'):
                 image_url = settings.MEDIA_URL + image_url
-        else:
-            image_url = ""
     else:
         top_seller = "N/A"
         image_url = ""
+
+    # Get daily sales data for last 7 days
+    today = datetime.now().date()
+    daily_sales = []
+    for i in range(7):
+        day = today - timedelta(days=6-i)
+        day_sales = transactions.filter(date__date=day).aggregate(
+            total=Sum('amount'))['total'] or 0
+        daily_sales.append({
+            'date': day.strftime('%a'),
+            'sales': float(day_sales)
+        })
+
+    # Get weekly sales data for last 4 weeks
+    weekly_sales = []
+    for i in range(4):
+        week_start = today - timedelta(days=today.weekday() + 7*i)
+        week_end = week_start + timedelta(days=6)
+        week_sales = transactions.filter(
+            date__date__gte=week_start,
+            date__date__lte=week_end
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        
+        # More descriptive week labels
+        if i == 0:
+            week_label = "Current Week"
+        elif i == 1:
+            week_label = "1 Week Ago"
+        elif i == 2:
+            week_label = "2 Weeks Ago"
+        else:
+            week_label = "3 Weeks Ago"
+        
+        weekly_sales.append({
+            'week': week_label,
+            'sales': float(week_sales)
+        })
+    weekly_sales.reverse()  # Keep oldest data first in the chart
+
+    # Get monthly sales data for last 6 months
+    monthly_sales = []
+    for i in range(6):
+        month = today.month - i
+        year = today.year
+        if month <= 0:
+            month += 12
+            year -= 1
+        month_sales = transactions.filter(
+            date__year=year,
+            date__month=month
+        ).aggregate(total=Sum('amount'))['total'] or 0
+        month_name = datetime(year, month, 1).strftime('%b')
+        monthly_sales.append({
+            'month': month_name,
+            'sales': float(month_sales)
+        })
+    monthly_sales.reverse()
 
     return JsonResponse({
         'total_items_sold': total_items_sold,
         'total_sales': f"₱{total_sales:,.2f}",
         'top_seller': top_seller,
         'top_seller_image': image_url,
+        'daily_sales': daily_sales,
+        'weekly_sales': weekly_sales,
+        'monthly_sales': monthly_sales
     })
