@@ -1413,3 +1413,44 @@ def extend_subscription(request):
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)}, status=500)
     return JsonResponse({"success": False, "message": "Invalid request method."}, status=405)
+  
+def seller_analytics(request):
+    # Only allow sellers to view their analytics
+    user = request.user
+    if user.role != 'Seller':
+        return JsonResponse({'error': 'Unauthorized'}, status=403)
+
+    # Get all delivered transactions for this seller
+    transactions = Transaction.objects.filter(product__seller=user, status='Delivered')
+
+    total_items_sold = transactions.aggregate(total=Sum('quantity'))['total'] or 0
+    total_sales = transactions.aggregate(total=Sum('amount'))['total'] or 0
+
+    # Top selling product
+    top_product = (
+        transactions.values('product__id', 'product__name', 'product__image')
+        .annotate(sold=Sum('quantity'))
+        .order_by('-sold')
+        .first()
+    )
+    if top_product:
+        top_seller = top_product['product__name']
+        # Get image URL (handle if image is missing)
+        image_url = top_product['product__image']
+        if image_url:
+            # If using Django's default storage, prepend MEDIA_URL if not already present
+            from django.conf import settings
+            if not image_url.startswith('http'):
+                image_url = settings.MEDIA_URL + image_url
+        else:
+            image_url = ""
+    else:
+        top_seller = "N/A"
+        image_url = ""
+
+    return JsonResponse({
+        'total_items_sold': total_items_sold,
+        'total_sales': f"₱{total_sales:,.2f}",
+        'top_seller': top_seller,
+        'top_seller_image': image_url,
+    })

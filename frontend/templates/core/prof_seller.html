@@ -176,6 +176,19 @@
                   <li class="nav-item" role="presentation">
                     <button
                       class="nav-link"
+                      id="analytics-tab"
+                      data-bs-toggle="tab"
+                      data-bs-target="#analytics-tab-pane"
+                      type="button"
+                      role="tab"
+                      aria-controls="analytics-tab-pane"
+                      aria-selected="false">
+                      Analytics
+                    </button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button
+                      class="nav-link"
                       id="profile-tab"
                       data-bs-toggle="tab"
                       data-bs-target="#profile-tab-pane"
@@ -305,7 +318,94 @@
                       </div>
                     </div>
                   </div>
-
+                  <script>
+                    document.addEventListener("DOMContentLoaded", function () {
+                      const analyticsTab = document.querySelector('button[data-bs-target="#analytics-tab-pane"]');
+                      if (analyticsTab) {
+                        analyticsTab.addEventListener("shown.bs.tab", function () {
+                          fetch("/seller-analytics/")
+                            .then((response) => response.json())
+                            .then((data) => {
+                              const content = document.getElementById("analyticsContent");
+                              if (data.error) {
+                                content.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                              } else {
+                                content.innerHTML = `
+                                  <div class="row">
+                                    <!-- Sales Summary Cards -->
+                                    <div class="col-md-6 mb-4">
+                                      <div class="card border-left-primary shadow h-100 py-2">
+                                        <div class="card-body">
+                                          <div class="row no-gutters align-items-center">
+                                            <div class="col mr-2">
+                                              <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                                Total Sales</div>
+                                              <div class="h3 mb-0 font-weight-bold text-gray-800">${data.total_sales}</div>
+                                            </div>
+                                            <div class="col-auto">
+                                              <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                  
+                                    <!-- Items Sold Card -->
+                                    <div class="col-md-6 mb-4">
+                                      <div class="card border-left-success shadow h-100 py-2">
+                                        <div class="card-body">
+                                          <div class="row no-gutters align-items-center">
+                                            <div class="col mr-2">
+                                              <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                                Total Items Sold</div>
+                                              <div class="h3 mb-0 font-weight-bold text-gray-800">${data.total_items_sold}</div>
+                                            </div>
+                                            <div class="col-auto">
+                                              <i class="fas fa-box fa-2x text-gray-300"></i>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                  
+                                  <!-- Top Selling Product Card -->
+                                  <div class="card shadow mb-4">
+                                    <div class="card-header py-3">
+                                      <h6 class="m-0 font-weight-bold text-primary">Top Selling Product</h6>
+                                    </div>
+                                    <div class="card-body">
+                                      <div class="row">
+                                        <div class="col-md-4 text-center mb-3">
+                                          <img src="${data.top_seller_image}" alt="${data.top_seller}" 
+                                               class="img-fluid rounded" style="max-height: 180px; max-width: 100%;">
+                                        </div>
+                                        <div class="col-md-8 d-flex align-items-center">
+                                          <div>
+                                            <h5 class="font-weight-bold text-dark">${data.top_seller}</h5>
+                                            <p class="text-muted">This is your best-selling product. Consider stocking more of this item or creating similar products to increase sales.</p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>       
+                                `;
+                              }
+                            })
+                            .catch(() => {
+                              document.getElementById("analyticsContent").innerHTML = "<div class='alert alert-danger'>Failed to load analytics.</div>";
+                            });
+                        });
+                      }
+                    });
+                  </script>
+                  <div class="tab-pane fade" id="analytics-tab-pane" role="tabpanel" aria-labelledby="analytics-tab" tabindex="0">
+                    <h5 class="mb-3">Analytics</h5>
+                    <div id="analyticsContent">
+                      <p>Loading analytics...</p>
+                    </div>
+                  </div>
+                  
                   <!-- Address Tab -->
                   <div class="tab-pane fade" id="address-tab-pane" role="tabpanel" aria-labelledby="address-tab" tabindex="0">
                     <div id="addressCardsContainer" class="mb-3">
@@ -497,6 +597,18 @@
                       const exactAddress = document.getElementById("exactAddress").value;
                       const fullAddress = `${exactAddress}, ${barangay}, ${city}, ${province}, ${region}`;
 
+                        // Check if all fields are filled
+                      if (
+                        !regionSelect.value ||
+                        !provinceSelect.value ||
+                        !citySelect.value ||
+                        !barangaySelect.value ||
+                        !exactAddress
+                      ) {
+                        alert("Please fill in all address fields before saving.");
+                        return;
+                      }
+                      
                       try {
                         const response = await fetch("/save-address/", {
                           method: "POST",

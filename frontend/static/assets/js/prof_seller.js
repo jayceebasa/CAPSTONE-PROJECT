@@ -16,3 +16,11 @@ var ordersTab = document.querySelector('button[data-bs-target="#order-tab-pane"]
       window.location.href = "/seller/";
     });
   }
+
+  // Show analytics tab and set it as active in localStorage when clicked
+var analyticsTab = document.querySelector('button[data-bs-target="#analytics-tab-pane"]');
+if (analyticsTab) {
+  analyticsTab.addEventListener('click', function () {
+    localStorage.setItem('activeTab', '#analytics-tab-pane');
+  });
+}
