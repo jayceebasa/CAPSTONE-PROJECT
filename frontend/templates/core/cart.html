@@ -271,7 +271,7 @@
 
               // Check if the user has an address
               var userAddress = "{{ user.address }}";
-              if (!userAddress) {
+              if (!userAddress || userAddress === "None") {
                 alert("Please add an address to proceed with the checkout.");
                 window.location.href = "{% url 'core:users' %}";
                 return;
