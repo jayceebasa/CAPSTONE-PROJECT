@@ -72,6 +72,51 @@
     <link rel="stylesheet" href="{% static 'assets/css/main.css' %}" />
     <!-- responsive -->
     <link rel="stylesheet" href="{% static 'assets/css/responsive.css' %}" />
+    <style>
+      #contactModal .modal-header {
+        border-bottom: none;
+        padding: 1.5rem;
+      }
+      
+      #contactModal .modal-title {
+        font-weight: 700;
+        letter-spacing: 1px;
+      }
+      
+      #contactModal .modal-body {
+        padding: 2rem;
+      }
+      
+      #contactModal .card {
+        border-radius: 10px;
+        transition: transform 0.3s;
+      }
+      
+      #contactModal .card:hover {
+        transform: translateY(-5px);
+      }
+      
+      #contactModal .btn-outline-primary,
+      #contactModal .btn-outline-danger {
+        border-width: 2px;
+        font-weight: 600;
+        padding: 10px;
+      }
+      
+      #contactModal .btn-outline-primary:hover {
+        background-color: #4267B2;
+        border-color: #4267B2;
+      }
+      
+      #contactModal .btn-outline-danger:hover {
+        background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+        border-color: #dc2743;
+      }
+      
+      #contactModal .modal-footer {
+        border-top: none;
+      }
+    </style>
   </head>
   <body>
     <!-- PreLoader-->
@@ -156,27 +201,24 @@
     <div class="footer-area">
       <div class="container">
         <div class="row justify-content-center">
-          <!-- Add justify-content-center -->
-
+          <!-- About us section -->
           <div class="col-lg-3 col-md-6">
             <div class="footer-box about-widget">
-              <!-- Add text-center -->
               <h2 class="widget-title">About us</h2>
               <p>
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
-                veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                ASTIG is a premier online marketplace showcasing Filipino artistry and craftsmanship. We connect talented local artisans with art enthusiasts worldwide, celebrating our rich cultural heritage while providing sustainable economic opportunities for our creative community.
               </p>
             </div>
           </div>
-
+    
+          <!-- Get in Touch section -->
           <div class="col-lg-3 col-md-6">
             <div class="footer-box get-in-touch">
-              <!-- Add text-center -->
               <h2 class="widget-title">Get in Touch</h2>
               <ul>
-                <li>Lorem ipsum dolor sit amet</li>
-                <li>Lorem ipsum dolor sit amet</li>
-                <li>Lorem ipsum dolor sit amet</li>
+                <li><i class="fas fa-map-marker-alt mr-2"></i> City of Imus, Cavite, Philippines 4103</li>
+                <li><i class="fas fa-envelope mr-2"></i> astig3793@gmail.com</li>
+                <li><i class="fas fa-phone mr-2"></i> +63 976 280 3717</li>
               </ul>
             </div>
           </div>
@@ -196,19 +238,10 @@
             <div class="social-icons">
               <ul>
                 <li>
-                  <a href="#" target="_blank"><i class="fab fa-facebook-f"></i></a>
+                  <a href="https://www.facebook.com/share/1FTas4yNtA/" target="_blank"><i class="fab fa-facebook-f"></i></a>
                 </li>
                 <li>
-                  <a href="#" target="_blank"><i class="fab fa-twitter"></i></a>
-                </li>
-                <li>
-                  <a href="#" target="_blank"><i class="fab fa-instagram"></i></a>
-                </li>
-                <li>
-                  <a href="#" target="_blank"><i class="fab fa-linkedin"></i></a>
-                </li>
-                <li>
-                  <a href="#" target="_blank"><i class="fab fa-dribbble"></i></a>
+                  <a href="https://www.instagram.com/astig656?igsh=MTY2ZDZrZjVmaGZtbg==" target="_blank"><i class="fab fa-instagram"></i></a>
                 </li>
               </ul>
             </div>

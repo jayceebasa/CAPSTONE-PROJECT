@@ -29,7 +29,59 @@
             <p class="subtitle" style="font-size: 15px; margin-left: -140px !important">Witness art like never before</p>
             <div class="hero-btns" style="margin-left: -140px !important">
               <a href="{% url 'core:shop' %}" class="boxed-btn" style="background-color: #84a1af">Art Collection</a>
-              <a href="contact.html" class="bordered-btn" style="border-color: #84a1af">Contact Us</a>
+              <a href="#" class="bordered-btn" style="border-color: #84a1af" onclick="openContactModal()" data-bs-toggle="modal" data-bs-target="#contactModal"
+                >Contact Us</a
+              >
+
+              <script>
+                document.addEventListener("DOMContentLoaded", function () {
+                  // Fix for modal backdrop issue
+                  const modal = document.getElementById("contactModal");
+
+                  // When modal is hidden (closed), remove backdrop and restore body scrolling
+                  modal.addEventListener("hidden.bs.modal", function () {
+                    // Remove any lingering backdrops
+                    const backdrops = document.querySelectorAll(".modal-backdrop");
+                    backdrops.forEach((backdrop) => {
+                      backdrop.remove();
+                    });
+
+                    // Restore body scrolling
+                    document.body.classList.remove("modal-open");
+                    document.body.style.overflow = "";
+                    document.body.style.paddingRight = "";
+                  });
+
+                  // Function to open the modal
+                  window.openContactModal = function () {
+                    try {
+                      const contactModal = new bootstrap.Modal(document.getElementById("contactModal"));
+                      contactModal.show();
+                    } catch (error) {
+                      console.error("Error showing modal:", error);
+                    }
+                  };
+
+                  // Ensure close button works correctly
+                  document.querySelectorAll('[data-bs-dismiss="modal"]').forEach((button) => {
+                    button.addEventListener("click", function () {
+                      const modal = bootstrap.Modal.getInstance(document.getElementById("contactModal"));
+                      if (modal) {
+                        modal.hide();
+
+                        // Force cleanup after a short delay
+                        setTimeout(() => {
+                          const backdrops = document.querySelectorAll(".modal-backdrop");
+                          backdrops.forEach((backdrop) => backdrop.remove());
+                          document.body.classList.remove("modal-open");
+                          document.body.style.overflow = "";
+                          document.body.style.paddingRight = "";
+                        }, 300);
+                      }
+                    });
+                  });
+                });
+              </script>
             </div>
           </div>
         </div>
@@ -38,6 +90,101 @@
   </div>
 </div>
 <!-- end hero area -->
+
+<!-- Add this modal at the end of your file, before the closing body tag -->
+<!-- Contact Us Modal -->
+<div class="modal fade" id="contactModal" tabindex="-1" aria-labelledby="contactModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="background-color: #84a1af; color: white">
+        <h5 class="modal-title" id="contactModalLabel">CONTACT US</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="container-fluid">
+          <div class="row">
+            <div class="col-md-12 text-center mb-4">
+              <h4 class="fw-bold">We'd Love to Hear From You!</h4>
+              <p>Have questions, feedback, or need support? Reach out through any of these channels:</p>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-7">
+              <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                  <h5 class="card-title fw-bold mb-4">Contact Options</h5>
+
+                  <div class="d-flex align-items-start mb-4">
+                    <div class="flex-shrink-0 me-3">
+                      <i class="fas fa-phone-alt fa-2x text-muted"></i>
+                    </div>
+                    <div>
+                      <h6 class="fw-bold">Phone Support</h6>
+                      <p class="mb-1"><a href="tel:+639762803717" class="text-decoration-none">+63 976 280 3717</a></p>
+                      <p class="text-muted">
+                        <small><em>(Monday-Friday, 9AM-5PM PHT)</em></small>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="d-flex align-items-start mb-4">
+                    <div class="flex-shrink-0 me-3">
+                      <i class="fas fa-envelope fa-2x text-muted"></i>
+                    </div>
+                    <div>
+                      <h6 class="fw-bold" style="padding-left: 5px">Email</h6>
+                      <p><a href="mailto:astig3793@gmail.com" class="text-decoration-none">astig3793@gmail.com</a></p>
+                    </div>
+                  </div>
+
+                  <div class="d-flex align-items-start mb-4">
+                    <div class="flex-shrink-0 me-3">
+                      <i class="fas fa-map-marker-alt fa-2x text-muted"></i>
+                    </div>
+                    <div>
+                      <h6 class="fw-bold" style="padding-left: 5px">Office Address</h6>
+                      <p>City of Imus, Cavite, Philippines 4103</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-5">
+              <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                  <h5 class="card-title fw-bold mb-4">Connect on Social Media</h5>
+
+                  <a href="https://www.facebook.com/share/1FTas4yNtA/" target="_blank" class="btn btn-outline-primary mb-3 w-100">
+                    <i class="fab fa-facebook-f me-2"></i> Facebook
+                  </a>
+
+                  <a href="https://www.instagram.com/astig656?igsh=MTY2ZDZrZjVmaGZtbg==" target="_blank" class="btn btn-outline-danger w-100">
+                    <i class="fab fa-instagram me-2"></i> Instagram
+                  </a>
+
+                  <div class="mt-4 text-center">
+                    <img src="{% static 'assets/img/astig.png' %}" alt="ASTIG Logo" style="max-width: 150px" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row mt-4">
+            <div class="col-12 text-center">
+              <p class="text-muted small"><i class="far fa-clock me-1"></i> Our team typically responds within 24 hours during business days.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- product section -->
 <div class="product-section mt-150 mb-150">
@@ -79,6 +226,8 @@
 
 <!-- Include jQuery -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Include Bootstrap Bundle JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {

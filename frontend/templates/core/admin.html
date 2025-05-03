@@ -266,6 +266,8 @@
             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
               <h1 class="h2">Dashboard</h1>
               <div class="btn-toolbar mb-2 mb-md-0">
+                <!-- Add export button -->
+                <button id="exportPdfBtn" class="btn btn-sm btn-outline-secondary me-2"><i class="bi bi-file-earmark-pdf"></i> Export PDF</button>
                 <div class="btn-group">
                   <button
                     type="button"
@@ -826,5 +828,197 @@
       integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
       crossorigin="anonymous"></script>
     <script src="{% static 'assets/js/admin.js' %}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // Export PDF functionality
+        document.getElementById("exportPdfBtn").addEventListener("click", generateDashboardPDF);
+
+        function generateDashboardPDF() {
+          // Show loading indicator
+          const loadingToast = showLoadingToast();
+
+          // Use html2canvas to convert the chart to an image
+          html2canvas(document.getElementById("myChart")).then((canvas) => {
+            const { jsPDF } = window.jspdf;
+
+            // Create PDF with A4 dimensions
+            const pdf = new jsPDF("p", "mm", "a4");
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+
+            // Add header with logo and title
+            addPdfHeader(pdf, pageWidth);
+
+            // Add current date
+            const today = new Date();
+            pdf.setTextColor(100, 100, 100);
+            pdf.setFontSize(10);
+            pdf.text(`Generated on: ${today.toLocaleDateString()} at ${today.toLocaleTimeString()}`, pageWidth - 15, 25, { align: "right" });
+
+            // Add dashboard title
+            pdf.setTextColor(33, 37, 41);
+            pdf.setFontSize(20);
+            pdf.text("Dashboard Report", pageWidth / 2, 40, { align: "center" });
+
+            // Add chart image
+            const chartImgData = canvas.toDataURL("image/png");
+            const chartImgWidth = pageWidth - 40; // 20mm margin on each side
+            const chartImgHeight = (canvas.height * chartImgWidth) / canvas.width;
+            pdf.addImage(chartImgData, "PNG", 20, 50, chartImgWidth, chartImgHeight);
+
+            // Add metrics
+            addMetricsSection(pdf, 60 + chartImgHeight, pageWidth);
+
+            // Add footer
+            addPdfFooter(pdf, pageHeight);
+
+            // Save the PDF
+            pdf.save(`ASTIG_Dashboard_Report_${formatDate(today)}.pdf`);
+
+            // Hide loading indicator
+            hideLoadingToast(loadingToast);
+          });
+        }
+
+        function addPdfHeader(pdf, pageWidth) {
+          // Add ASTIG logo (using generic logo placeholder)
+          pdf.setFillColor(33, 37, 41);
+          pdf.rect(20, 15, 12, 12, "F");
+          pdf.setTextColor(255, 255, 255);
+          pdf.setFontSize(10);
+          pdf.text("ASTIG", 26, 22.5, { align: "center" });
+
+          // Add title
+          pdf.setTextColor(33, 37, 41);
+          pdf.setFontSize(16);
+          pdf.setFont(undefined, "bold");
+          pdf.text("ASTIG MARKETPLACE", 40, 22);
+          pdf.setFontSize(10);
+          pdf.setFont(undefined, "normal");
+          pdf.text("Admin Dashboard Report", 40, 28);
+        }
+
+        function addMetricsSection(pdf, yPosition, pageWidth) {
+          pdf.setFontSize(14);
+          pdf.setFont(undefined, "bold");
+          pdf.text("Key Metrics", 20, yPosition);
+          pdf.setFont(undefined, "normal");
+        
+          // Get metrics data
+          const salesTodayText = document.getElementById("sales-today").textContent;
+          const totalSalesText = document.getElementById("total-sales").textContent;
+          const pendingOrdersText = document.getElementById("pending-orders").textContent;
+        
+          // Define metrics array
+          const metrics = [
+            { name: "Sales Today", value: salesTodayText },
+            { name: "Total Sales", value: totalSalesText },
+            { name: "Pending Orders", value: pendingOrdersText },
+          ];
+        
+          // Constants for table layout
+          const rowHeight = 10;
+          const headerHeight = 10;
+          const tableStartY = yPosition + 5;
+          const totalTableHeight = headerHeight + (metrics.length * rowHeight);
+        
+          // Add metrics table
+          pdf.setDrawColor(220, 220, 220);
+        
+          // Draw table header
+          pdf.setFillColor(240, 240, 240);
+          pdf.rect(20, tableStartY, pageWidth - 40, headerHeight, "F");
+          pdf.setTextColor(33, 37, 41);
+          pdf.setFontSize(12);
+          pdf.text("Metric", 30, tableStartY + 6);
+          pdf.text("Value", pageWidth - 30, tableStartY + 6, { align: "right" });
+        
+          // Draw table rows
+          metrics.forEach((metric, index) => {
+            const rowY = tableStartY + headerHeight + (index * rowHeight);
+            
+            // Alternate row background colors
+            if (index % 2 === 0) {
+              pdf.setFillColor(255, 255, 255);
+            } else {
+              pdf.setFillColor(248, 249, 250);
+            }
+            
+            pdf.rect(20, rowY, pageWidth - 40, rowHeight, "F");
+            pdf.setTextColor(33, 37, 41);
+            pdf.setFontSize(10);
+            pdf.text(metric.name, 30, rowY + 6);
+            pdf.text(metric.value, pageWidth - 30, rowY + 6, { align: "right" });
+          });
+        
+          // Draw table border - now using calculated total height
+          pdf.rect(20, tableStartY, pageWidth - 40, totalTableHeight);
+          
+          // Return the end position of the table for potential next elements
+          return tableStartY + totalTableHeight;
+        }
+
+        function addPdfFooter(pdf, pageHeight) {
+          pdf.setDrawColor(220, 220, 220);
+          pdf.setLineWidth(0.5);
+          pdf.line(20, pageHeight - 20, pdf.internal.pageSize.getWidth() - 20, pageHeight - 20);
+
+          pdf.setTextColor(100, 100, 100);
+          pdf.setFontSize(8);
+          pdf.text("© ASTIG Marketplace. All rights reserved.", pdf.internal.pageSize.getWidth() / 2, pageHeight - 15, { align: "center" });
+          pdf.text("Page 1", pdf.internal.pageSize.getWidth() / 2, pageHeight - 10, { align: "center" });
+        }
+
+        function formatDate(date) {
+          return date.toISOString().split("T")[0];
+        }
+
+        function showLoadingToast() {
+          // Create toast container if it doesn't exist
+          let toastContainer = document.querySelector(".toast-container");
+          if (!toastContainer) {
+            toastContainer = document.createElement("div");
+            toastContainer.className = "toast-container position-fixed bottom-0 end-0 p-3";
+            document.body.appendChild(toastContainer);
+          }
+
+          // Create toast
+          const toastEl = document.createElement("div");
+          toastEl.className = "toast show";
+          toastEl.setAttribute("role", "alert");
+          toastEl.setAttribute("aria-live", "assertive");
+          toastEl.setAttribute("aria-atomic", "true");
+
+          toastEl.innerHTML = `
+          <div class="toast-header">
+            <strong class="me-auto">ASTIG</strong>
+            <small>Just now</small>
+          </div>
+          <div class="toast-body">
+            <div class="d-flex align-items-center">
+              <div class="spinner-border spinner-border-sm me-2" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+              Generating PDF report...
+            </div>
+          </div>
+        `;
+
+          toastContainer.appendChild(toastEl);
+          return toastEl;
+        }
+
+        function hideLoadingToast(toastEl) {
+          setTimeout(() => {
+            toastEl.className = "toast";
+            setTimeout(() => {
+              toastEl.remove();
+            }, 300);
+          }, 500);
+        }
+      });
+    </script>
   </body>
 </html>
