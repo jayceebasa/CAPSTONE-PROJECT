@@ -471,16 +471,25 @@ class register(APIView):
                 user.save()
 
                 verification_link = request.build_absolute_uri(f'/verify-email/{email_verification_token}/')
-                email_body = render_to_string('core/email_verification.txt', {
+                
+                # Render HTML email
+                html_message = render_to_string('core/email_verification.html', {
+                    'user': user,
+                    'verification_link': verification_link,
+                })
+                
+                # Also render plain text email as fallback
+                plain_message = render_to_string('core/email_verification.txt', {
                     'user': user,
                     'verification_link': verification_link
                 })
 
                 send_mail(
-                    'Verify your email',
-                    email_body,
-                    'from@example.com',
+                    'ASTIG - Verify Your Email Address',
+                    plain_message,
+                    'ASTIG Marketplace <noreply@astig.com>',
                     [email],
+                    html_message=html_message,
                     fail_silently=False,
                 )
 

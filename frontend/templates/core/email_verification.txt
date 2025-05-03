@@ -4,5 +4,9 @@ Please verify your email by clicking on the following link:
 
 {{ verification_link }}
 
-Thank you,
-Your Website Team
+This verification link will expire in 24 hours.
+
+Thank you for choosing ASTIG!
+Questions? Contact us at astig3793@gmail.com or call +63 976 280 3717
+
+© 2025 ASTIG. All rights reserved.

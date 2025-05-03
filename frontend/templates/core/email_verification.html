@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verification</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Poppins', Arial, sans-serif; background-color: #f4f4f4;">
+    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-top: 40px; margin-bottom: 40px;">
+        <!-- Header -->
+        <tr>
+            <td align="center" bgcolor="#4CAF50" style="padding: 30px 0;">        
+            </td>
+        </tr>
+        
+        <!-- Body -->
+        <tr>
+            <td style="padding: 40px 30px;">
+                <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                        <td style="padding-bottom: 20px; text-align: center;">
+                            <h1 style="margin: 0; color: #333333; font-size: 24px; font-weight: 600;">Verify Your Email Address</h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding-bottom: 30px; color: #666666; line-height: 1.6;">
+                            <p>Hello <strong>{{ user.username }}</strong>,</p>
+                            <p>Thank you for registering with ASTIG. To complete your registration and access all features, please verify your email address by clicking the button below:</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" style="padding-bottom: 30px;">
+                            <table border="0" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td align="center" bgcolor="#4CAF50" style="border-radius: 6px;">
+                                        <a href="{{ verification_link }}" target="_blank" style="display: inline-block; padding: 16px 36px; font-size: 16px; color: #FFFFFF; text-decoration: none; border-radius: 6px; font-weight: 600;">Verify Email Address</a>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="color: #999999; font-size: 14px;">
+                            <p>If the button doesn't work, copy and paste this link into your browser:</p>
+                            <p style="word-break: break-all; color: #4CAF50;"><a href="{{ verification_link }}" style="color: #4CAF50; text-decoration: none;">{{ verification_link }}</a></p>
+                            <p style="margin-top: 30px;">This verification link will expire in 24 hours.</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        
+        <!-- Footer -->
+        <tr>
+            <td align="center" bgcolor="#f9f9f9" style="padding: 24px 30px;">
+                <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                        <td style="color: #777777; font-size: 14px; text-align: center; line-height: 1.5;">
+                            <p style="margin: 0;">Thank you for choosing ASTIG!</p>
+                            <p style="margin: 8px 0 0;">Questions? Contact us at <a href="mailto:astig3793@gmail.com" style="color: #4CAF50; text-decoration: none;">astig3793@gmail.com</a> or call <a href="tel:+639762803717" style="color: #4CAF50; text-decoration: none;">+63 976 280 3717</a></p>
+                            <p style="margin: 16px 0 0; font-size: 12px;">© 2025 ASTIG. All rights reserved.</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
