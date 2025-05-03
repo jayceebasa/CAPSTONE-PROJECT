@@ -58,6 +58,25 @@
           font-size: 1.5rem;
         }
       }
+
+      .terms-card {
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        background-color: #f8f9fa;
+      }
+
+      .terms-card h6 {
+        font-weight: 600;
+        color: #333;
+      }
+
+      .terms-card p,
+      .terms-card ul {
+        color: #555;
+      }
+
+      .terms-card ul {
+        padding-left: 1.25rem;
+      }
     </style>
   </head>
   <body>
@@ -340,37 +359,37 @@
                       </div>
                     </div>
                   </div>
-                    <script>
-                      document.addEventListener("DOMContentLoaded", function () {
-                        // Existing analytics tab click handler
-                        const analyticsTab = document.querySelector('button[data-bs-target="#analytics-tab-pane"]');
-                        if (analyticsTab) {
-                          analyticsTab.addEventListener("shown.bs.tab", function () {
-                            loadAnalyticsData();
-                          });
-                        }
-                        
-                        // Check if analytics tab is active on page load
-                        const activeTab = localStorage.getItem('activeTab');
-                        if (activeTab === '#analytics-tab-pane') {
-                          // If analytics tab should be active, load data immediately
-                          setTimeout(loadAnalyticsData, 300); // Small delay to ensure DOM is ready
-                        }
-                        
-                        // Function to load analytics data
-                        function loadAnalyticsData() {
-                          const content = document.getElementById("analyticsContent");
-                          if (content) {
-                            content.innerHTML = `<p>Loading analytics...</p>`;
-                            
-                            fetch("/seller-analytics/")
-                              .then((response) => response.json())
-                              .then((data) => {
-                                if (data.error) {
-                                  content.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
-                                } else {
-                                  // Your existing analytics HTML rendering code stays the same
-                                  content.innerHTML = `
+                  <script>
+                    document.addEventListener("DOMContentLoaded", function () {
+                      // Existing analytics tab click handler
+                      const analyticsTab = document.querySelector('button[data-bs-target="#analytics-tab-pane"]');
+                      if (analyticsTab) {
+                        analyticsTab.addEventListener("shown.bs.tab", function () {
+                          loadAnalyticsData();
+                        });
+                      }
+
+                      // Check if analytics tab is active on page load
+                      const activeTab = localStorage.getItem("activeTab");
+                      if (activeTab === "#analytics-tab-pane") {
+                        // If analytics tab should be active, load data immediately
+                        setTimeout(loadAnalyticsData, 300); // Small delay to ensure DOM is ready
+                      }
+
+                      // Function to load analytics data
+                      function loadAnalyticsData() {
+                        const content = document.getElementById("analyticsContent");
+                        if (content) {
+                          content.innerHTML = `<p>Loading analytics...</p>`;
+
+                          fetch("/seller-analytics/")
+                            .then((response) => response.json())
+                            .then((data) => {
+                              if (data.error) {
+                                content.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                              } else {
+                                // Your existing analytics HTML rendering code stays the same
+                                content.innerHTML = `
                                     <div class="row">
                                       <!-- Sales Summary Cards -->
                                       <div class="col-md-6 mb-4">
@@ -474,15 +493,15 @@
               `;
 
                                 // Create the charts after the content is added to the DOM
-              // Call createSalesCharts after HTML is populated
-              createSalesCharts(data);
-            }
-          })
-          .catch(() => {
-            content.innerHTML = "<div class='alert alert-danger'>Failed to load analytics.</div>";
-          });
-      }
-    }
+                                // Call createSalesCharts after HTML is populated
+                                createSalesCharts(data);
+                              }
+                            })
+                            .catch(() => {
+                              content.innerHTML = "<div class='alert alert-danger'>Failed to load analytics.</div>";
+                            });
+                        }
+                      }
 
                       let dailyChart, weeklyChart, monthlyChart;
 
@@ -2163,15 +2182,95 @@
               <label for="proofOfPaymentInput" class="form-label">Upload Proof of Payment:</label>
               <input type="file" id="proofOfPaymentInput" name="proof_of_payment" accept="image/*" class="form-control" />
             </div>
+
+            <!-- Terms and Conditions Section -->
+            <div class="mt-4">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="fw-bold mb-0">Terms & Conditions</h6>
+                <button
+                  class="btn btn-sm btn-outline-secondary"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#termsCollapse"
+                  aria-expanded="false"
+                  aria-controls="termsCollapse">
+                  View Terms
+                </button>
+              </div>
+
+              <div class="collapse" id="termsCollapse">
+                <div class="card card-body terms-card" style="max-height: 300px; overflow-y: auto; font-size: 0.9rem">
+                  <h6>TERMS & CONDITIONS</h6>
+                  <h6 class="mt-3 mb-2">1. Subscription Plan</h6>
+                  <p class="mb-1">Plan Name: Astig Seller Membership</p>
+                  <p class="mb-1">Price: ₱300/month</p>
+                  <p class="mb-1">Payment Method: GCash</p>
+                  <p class="mb-1">Purpose: Enables artisans to sell products on astig.com</p>
+
+                  <h6 class="mt-3 mb-2">2. Seller Benefits</h6>
+                  <p class="mb-1">Product Listings: List up to 100 active products</p>
+                  <p class="mb-1">Zero Commission: Keep 100% of your sales (we charge only the subscription fee)</p>
+                  <p class="mb-1">Sales Dashboard: Real-time analytics on views/purchases</p>
+
+                  <h6 class="mt-3 mb-2">3. Billing & Renewal</h6>
+                  <p class="mb-1">Auto-Renewal: GCash charges recur every 30 days unless canceled</p>
+                  <p class="mb-1">Failed Payments:</p>
+                  <ul class="mb-1">
+                    <li>1st attempt: Auto-retry after 24 hrs</li>
+                    <li>2nd failure: Account Locked until Payment</li>
+                  </ul>
+                  <p class="mb-1">Receipts: Sent via GCash app</p>
+
+                  <h6 class="mt-3 mb-2">4. Cancellation & Refunds</h6>
+                  <p class="mb-1">No-Refund Policy</p>
+
+                  <h6 class="mt-3 mb-2">5. GCash-Specific Terms</h6>
+                  <ul class="mb-1">
+                    <li>Ensure your GCash wallet/connected bank account has sufficient funds</li>
+                    <li>Astig cannot access your GCash PIN/OTP (security is GCash's responsibility)</li>
+                  </ul>
+
+                  <h6 class="mt-3 mb-2">6. Violations & Termination</h6>
+                  <p class="mb-1">Astig may lock accounts for:</p>
+                  <ul class="mb-1">
+                    <li>Selling counterfeit items</li>
+                    <li>Unprofessional conduct</li>
+                    <li>Payment fraud</li>
+                  </ul>
+
+                  <h6 class="mt-3 mb-2">7. Contact</h6>
+                  <p class="mb-1">Questions? Email astig3793@gmail.com or call +63 976 280 3717.</p>
+                </div>
+              </div>
+
+              <div class="form-check mt-3">
+                <input class="form-check-input" type="checkbox" id="termsAgreement" required />
+                <label class="form-check-label" for="termsAgreement"> I have read and agree to the Terms & Conditions </label>
+              </div>
+            </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            <button type="button" class="btn btn-primary" onclick="submitSubscription()">Subscribe</button>
+            <button type="button" class="btn btn-primary" id="subscribeButton" onclick="validateAndSubmit()" disabled>Subscribe</button>
           </div>
         </div>
       </div>
     </div>
+    <script>
+      // Update the existing submitSubscription function to use the new validation
+      function validateAndSubmit() {
+        if (!document.getElementById("termsAgreement").checked) {
+          alert("You must agree to the Terms & Conditions before subscribing.");
+          return;
+        }
+        submitSubscription();
+      }
 
+      // Add event listener to checkbox to enable/disable subscribe button
+      document.getElementById("termsAgreement").addEventListener("change", function () {
+        document.getElementById("subscribeButton").disabled = !this.checked;
+      });
+    </script>
     <!-- Success Modal -->
     <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
       <div class="modal-dialog">
