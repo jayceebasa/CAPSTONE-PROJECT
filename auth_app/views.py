@@ -242,6 +242,40 @@ def seller_profile(request):
         'subscription_end_date': request.user.subscription_end_date,  # Add this line
     })
 
+@csrf_exempt
+def extend_subscription(request, user_id):
+    if request.method == "POST":
+        try:
+            user = get_object_or_404(User, id=user_id)
+            
+            # Extend the subscription end date by 30 days
+            if user.subscription_end_date:
+                user.subscription_end_date += timedelta(days=30)
+            else:
+                user.subscription_end_date = timezone.now() + timedelta(days=30)
+            
+            user.is_subscribed = True
+            user.save()
+            
+            return JsonResponse({"success": True, "message": "Subscription extended successfully"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)}, status=500)
+    return JsonResponse({"success": False, "message": "Invalid request method"}, status=405)
+
+@csrf_exempt
+def revoke_subscription(request, user_id):
+    if request.method == "POST":
+        try:
+            user = get_object_or_404(User, id=user_id)
+            user.is_subscribed = False
+            user.subscription_end_date = None
+            user.save()
+            
+            return JsonResponse({"success": True, "message": "Subscription revoked successfully"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)}, status=500)
+    return JsonResponse({"success": False, "message": "Invalid request method"}, status=405)
+
 @login_required
 def get_order_details(request, order_number):
     transactions = Transaction.objects.filter(order_number=order_number).filter(Q(user=request.user) | Q(product__seller=request.user))
@@ -1189,23 +1223,42 @@ def admin_required(view_func):
 
 @login_required
 @admin_required
+@login_required
+@admin_required
 def admin_view(request):
     # Fetch and paginate transactions
     transactions = Transaction.objects.order_by('-date')
-    transaction_paginator = Paginator(transactions, 5)  # Show 5 transactions per page
+    transaction_paginator = Paginator(transactions, 5)
     transaction_page_number = request.GET.get('page')
     transaction_page_obj = transaction_paginator.get_page(transaction_page_number)
 
     # Fetch and paginate users excluding Admins
     users = User.objects.exclude(role='Admin').order_by('username')
-    user_paginator = Paginator(users, 5)  # Show 5 users per page
+    user_paginator = Paginator(users, 5)
     user_page_number = request.GET.get('page')
     user_page_obj = user_paginator.get_page(user_page_number)
 
-    # Serialize user data to JSON
-    users_json = mark_safe(json.dumps(list(users.values('id', 'username', 'email', 'first_name', 'last_name', 'role', 'is_active'))))
+    # Create a list to hold serializable user data
+    serializable_users = []
+    for user in users:
+        user_data = {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'role': user.role,
+            'is_active': user.is_active,
+            'is_subscribed': user.is_subscribed,
+            # Convert datetime to string format
+            'subscription_end_date': user.subscription_end_date.isoformat() if user.subscription_end_date else None
+        }
+        serializable_users.append(user_data)
 
-  # Fetch users with pending subscriptions
+    # Serialize user data to JSON
+    users_json = mark_safe(json.dumps(serializable_users))
+
+    # Fetch users with pending subscriptions
     pending_subscriptions = User.objects.filter(subscription_payment__isnull=False)
     users_with_subscriptions = User.objects.filter(subscription_payment__isnull=False)
     return render(request, 'core/admin.html', {
@@ -1521,3 +1574,24 @@ def seller_analytics(request):
         'weekly_sales': weekly_sales,
         'monthly_sales': monthly_sales
     })
+    
+@csrf_exempt
+def extend_subscription_by_id(request, user_id):
+    """Extends the subscription of a user by 30 days from their current end date"""
+    if request.method == "POST":
+        try:
+            user = get_object_or_404(User, id=user_id)
+            
+            # Extend the subscription end date by 30 days
+            if user.subscription_end_date:
+                user.subscription_end_date += timedelta(days=30)
+            else:
+                user.subscription_end_date = timezone.now() + timedelta(days=30)
+            
+            user.is_subscribed = True
+            user.save()
+            
+            return JsonResponse({"success": True, "message": "Subscription extended successfully"})
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)}, status=500)
+    return JsonResponse({"success": False, "message": "Invalid request method"}, status=405)

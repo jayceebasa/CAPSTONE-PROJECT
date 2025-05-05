@@ -2390,7 +2390,7 @@
                 const isSubscribed = "{{ is_subscribed }}" === "True";
                 const subscriptionPayment = "{{ subscription_payment }}";
 
-                if (daysDifference <= 3 && isSubscribed && subscriptionEndDate && !subscriptionPayment) {
+                if (daysDifference <= 15 && isSubscribed && subscriptionEndDate && !subscriptionPayment) {
                   const button = document.createElement("button");
                   button.textContent = "Subscribe in advance";
                   button.className = "btn btn-warning";

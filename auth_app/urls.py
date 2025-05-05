@@ -66,5 +66,7 @@ urlpatterns = [
     path('mark-delivered/<str:order_number>/', views.mark_as_delivered, name='mark_as_delivered'),
     path('update-subscription-status/', views.update_subscription_status, name='update_subscription_status'),
     path('extend-subscription/', views.extend_subscription, name='extend_subscription'),
+    path('api/extend-subscription/<int:user_id>/', views.extend_subscription_by_id, name='extend_subscription_by_id'),
+    path('api/revoke-subscription/<int:user_id>/', views.revoke_subscription, name='revoke_subscription'),
     path('seller-analytics/', views.seller_analytics, name='seller_analytics'),
 ]
