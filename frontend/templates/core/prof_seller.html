@@ -1959,7 +1959,7 @@
       <div class="container">
         <div class="row">
           <div class="col-lg-6 col-md-12">
-            <p>Copyrights &copy; 2025 - ASTIG, All Rights Reserved.</p>
+            <p>Copyright &copy; 2025 - ASTIG, All Rights Reserved.</p>
           </div>
           <div class="col-lg-6 text-right col-md-12">
             <div class="social-icons">
@@ -2437,21 +2437,6 @@
                     submitSubscription();
                   });
 
-                  // Find the "Add to cart" button and append the "Subscribe in advance" button next to it
-                  const addToCartButton = document.querySelector(".addProduct");
-                  if (addToCartButton) {
-                    const subscribeButton = document.createElement("button");
-                    subscribeButton.textContent = "Subscribe in advance";
-                    subscribeButton.className = "btn btn-primary";
-                    subscribeButton.style.marginTop = "-10px";
-                    subscribeButton.setAttribute("data-bs-toggle", "modal");
-                    subscribeButton.setAttribute("data-bs-target", "#subscribeModal");
-
-                    addToCartButton.parentNode.insertBefore(subscribeButton, addToCartButton.nextSibling);
-                    console.log("Subscribe in advance button appended next to the Add to cart button"); // Debugging statement
-                  } else {
-                    console.error("Add to cart button not found"); // Debugging statement
-                  }
                 }
               } else {
                 console.error("Subscription end date not found in the response"); // Debugging statement
