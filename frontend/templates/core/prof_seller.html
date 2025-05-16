@@ -286,6 +286,20 @@
                   <li class="nav-item" role="presentation">
                     <button
                       class="nav-link"
+                      id="subscription-tab"
+                      data-bs-toggle="tab"
+                      data-bs-target="#subscription-tab-pane"
+                      type="button"
+                      role="tab"
+                      aria-controls="subscription-tab-pane"
+                      aria-selected="false">
+                      Subscription
+                    </button>
+                  </li>
+
+                  <li class="nav-item" role="presentation">
+                    <button
+                      class="nav-link"
                       id="transaction-tab"
                       data-bs-toggle="tab"
                       data-bs-target="#transaction-tab-pane"
@@ -657,6 +671,24 @@
                     </form>
                   </div>
 
+                  <div class="tab-content" id="sellerProfileTabContent">
+                    <div class="tab-pane fade" id="subscription-tab-pane" role="tabpanel" aria-labelledby="subscription-tab" tabindex="0">
+                      <div class="container mt-3">
+                        {% if not user.is_subscribed and not is_waiting_for_verification %}
+                        <div class="alert alert-warning" role="alert">You need to subscribe to be able to sell your products.</div>
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#subscribeModal">Subscribe</button>
+                        {% elif is_waiting_for_verification and not user.is_subscribed %}
+                        <div class="alert alert-info" role="alert">Waiting for admin to verify your subscription.</div>
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#subscribeModal">Resend Proof of Payment</button>
+                        {% else %}
+                        <div class="alert alert-success" role="alert">Your subscription is active until {{ subscription_end_date }}.</div>
+                        <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#subscribeModal">Renew Subscription</button>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+
+                  
                   <!-- Add the new GCash tab content -->
                   <div class="tab-pane fade" id="gcash-tab-pane" role="tabpanel" aria-labelledby="gcash-tab" tabindex="0">
                     <div class="col-12 col-md-4">
@@ -1109,10 +1141,8 @@
                   <div class="tab-pane fade" id="transaction-tab-pane" role="tabpanel" aria-labelledby="transaction-tab">
                     {% if not user.is_subscribed and not is_waiting_for_verification %}
                     <div class="alert alert-warning" role="alert">You need to subscribe to be able to sell your products.</div>
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#subscribeModal">Subscribe</button>
                     {% elif is_waiting_for_verification and not user.is_subscribed %}
                     <div class="alert alert-info" role="alert">Waiting for admin to verify your subscription.</div>
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#subscribeModal">Resend Proof of Payment</button>
                     {% else %}
                     <div class="table-responsive mt-3">
                       <button
@@ -1139,9 +1169,7 @@
                           }
                         });
                       </script>
-                      <div style="display: inline-block">
-                        <span style="float: right"><strong>Subscription end date:</strong> {{subscription_end_date}}</span>
-                      </div>
+                      
                       <div class="modal fade" id="addProductModal" tabindex="-1" aria-labelledby="addProductModalLabel" aria-hidden="true">
                         <div class="modal-dialog">
                           <div class="modal-content">
@@ -1885,35 +1913,36 @@
       });
     </script>
 
-<!-- footer -->
-<div class="footer-area">
-  <div class="container">
-    <div class="row justify-content-center">
-      <!-- About us section -->
-      <div class="col-lg-3 col-md-6">
-        <div class="footer-box about-widget">
-          <h2 class="widget-title">About us</h2>
-          <p>
-            ASTIG is a premier online marketplace showcasing Filipino artistry and craftsmanship. We connect talented local artisans with art enthusiasts worldwide, celebrating our rich cultural heritage while providing sustainable economic opportunities for our creative community.
-          </p>
-        </div>
-      </div>
+    <!-- footer -->
+    <div class="footer-area">
+      <div class="container">
+        <div class="row justify-content-center">
+          <!-- About us section -->
+          <div class="col-lg-3 col-md-6">
+            <div class="footer-box about-widget">
+              <h2 class="widget-title">About us</h2>
+              <p>
+                ASTIG is a premier online marketplace showcasing Filipino artistry and craftsmanship. We connect talented local artisans with art enthusiasts
+                worldwide, celebrating our rich cultural heritage while providing sustainable economic opportunities for our creative community.
+              </p>
+            </div>
+          </div>
 
-      <!-- Get in Touch section -->
-      <div class="col-lg-3 col-md-6">
-        <div class="footer-box get-in-touch">
-          <h2 class="widget-title">Get in Touch</h2>
-          <ul>
-            <li><i class="fas fa-map-marker-alt mr-2"></i> City of Imus, Cavite, Philippines 4103</li>
-            <li><i class="fas fa-envelope mr-2"></i> astig3793@gmail.com</li>
-            <li><i class="fas fa-phone mr-2"></i> +63 976 280 3717</li>
-          </ul>
+          <!-- Get in Touch section -->
+          <div class="col-lg-3 col-md-6">
+            <div class="footer-box get-in-touch">
+              <h2 class="widget-title">Get in Touch</h2>
+              <ul>
+                <li><i class="fas fa-map-marker-alt mr-2"></i> City of Imus, Cavite, Philippines 4103</li>
+                <li><i class="fas fa-envelope mr-2"></i> astig3793@gmail.com</li>
+                <li><i class="fas fa-phone mr-2"></i> +63 976 280 3717</li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</div>
-<!-- end footer -->
+    <!-- end footer -->
 
     <!-- copyright -->
     <div class="copyright">

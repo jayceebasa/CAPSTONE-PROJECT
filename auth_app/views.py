@@ -60,6 +60,9 @@ from functools import wraps
 from django.utils.decorators import method_decorator
 from django.contrib.auth.forms import PasswordChangeForm
 from django.http import HttpResponseForbidden
+from celery import shared_task
+from django.utils.timezone import now
+
 logger = logging.getLogger(__name__)
 
 User = get_user_model()
@@ -1595,3 +1598,26 @@ def extend_subscription_by_id(request, user_id):
         except Exception as e:
             return JsonResponse({"success": False, "message": str(e)}, status=500)
     return JsonResponse({"success": False, "message": "Invalid request method"}, status=405)
+  
+def notify_sellers_about_expiring_subscriptions():
+    """Notify sellers with 15 days left in their subscription."""
+    today = now().date()
+    fifteen_days_from_now = today + timedelta(days=15)
+
+    # Get all sellers whose subscription ends in 15 days
+    sellers_to_notify = User.objects.filter(
+        role='Seller',
+        is_subscribed=True,
+        subscription_end_date=fifteen_days_from_now
+    )
+
+    for seller in sellers_to_notify:
+        # Send email notification
+        send_mail(
+            subject="Subscription Expiry Reminder",
+            message=f"Dear {seller.first_name},\n\nYour subscription will expire in 15 days on {seller.subscription_end_date}. "
+                    f"Please renew your subscription to continue selling your products.\n\nThank you!",
+            from_email="noreply@astig.com",
+            recipient_list=[seller.email],
+            fail_silently=False,
+        )
