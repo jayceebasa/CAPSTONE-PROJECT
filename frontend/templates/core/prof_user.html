@@ -1065,7 +1065,7 @@
                         document.body.classList.remove("modal-open");
                         document.body.style.paddingRight = "";
                       });
-                      
+
                       function getCookie(name) {
                         let cookieValue = null;
                         if (document.cookie && document.cookie !== "") {
@@ -1140,35 +1140,36 @@
         });
       });
     </script>
-<!-- footer -->
-<div class="footer-area">
-  <div class="container">
-    <div class="row justify-content-center">
-      <!-- About us section -->
-      <div class="col-lg-3 col-md-6">
-        <div class="footer-box about-widget">
-          <h2 class="widget-title">About us</h2>
-          <p>
-            ASTIG is a premier online marketplace showcasing Filipino artistry and craftsmanship. We connect talented local artisans with art enthusiasts worldwide, celebrating our rich cultural heritage while providing sustainable economic opportunities for our creative community.
-          </p>
-        </div>
-      </div>
+    <!-- footer -->
+    <div class="footer-area">
+      <div class="container">
+        <div class="row justify-content-center">
+          <!-- About us section -->
+          <div class="col-lg-3 col-md-6">
+            <div class="footer-box about-widget">
+              <h2 class="widget-title">About us</h2>
+              <p>
+                ASTIG is a premier online marketplace showcasing Filipino artistry and craftsmanship. We connect talented local artisans with art enthusiasts
+                worldwide, celebrating our rich cultural heritage while providing sustainable economic opportunities for our creative community.
+              </p>
+            </div>
+          </div>
 
-      <!-- Get in Touch section -->
-      <div class="col-lg-3 col-md-6">
-        <div class="footer-box get-in-touch">
-          <h2 class="widget-title">Get in Touch</h2>
-          <ul>
-            <li><i class="fas fa-map-marker-alt mr-2"></i> City of Imus, Cavite, Philippines 4103</li>
-            <li><i class="fas fa-envelope mr-2"></i> astig3793@gmail.com</li>
-            <li><i class="fas fa-phone mr-2"></i> +63 976 280 3717</li>
-          </ul>
+          <!-- Get in Touch section -->
+          <div class="col-lg-3 col-md-6">
+            <div class="footer-box get-in-touch">
+              <h2 class="widget-title">Get in Touch</h2>
+              <ul>
+                <li><i class="fas fa-map-marker-alt mr-2"></i> City of Imus, Cavite, Philippines 4103</li>
+                <li><i class="fas fa-envelope mr-2"></i> astig3793@gmail.com</li>
+                <li><i class="fas fa-phone mr-2"></i> +63 976 280 3717</li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</div>
-<!-- end footer -->
+    <!-- end footer -->
 
     <!-- copyright -->
     <div class="copyright">
@@ -1224,7 +1225,7 @@
     <!-- main js -->
     <script src="{% static 'assets/js/main.js' %}"></script>
     <script src="https://unpkg.com/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{% static 'assets/js/prof_user.js' %}"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
       $(document).ready(function () {
         // Function to set the active tab from local storage
@@ -1232,18 +1233,18 @@
           var activeTab = localStorage.getItem("activeTab");
           if (activeTab) {
             // Hide all tab contents
-            $('.tab-pane').removeClass('show active');
-            
+            $(".tab-pane").removeClass("show active");
+
             // Show the active tab content
             var tabElement = $('[data-bs-target="' + activeTab + '"]');
             tabElement.tab("show");
-            $(activeTab).addClass('show active');
+            $(activeTab).addClass("show active");
           }
         }
-    
+
         // Set the active tab on page load
         setActiveTab();
-    
+
         // Store the active tab in local storage when a tab is clicked
         $('button[data-bs-toggle="tab"]').on("shown.bs.tab", function (event) {
           var activeTab = $(event.target).data("bs-target");

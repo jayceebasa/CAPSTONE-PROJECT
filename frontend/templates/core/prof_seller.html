@@ -1830,7 +1830,7 @@
                     method: "POST",
                     headers: {
                       "Content-Type": "application/json",
-                      "X-CSRFToken": "{{ csrf_token }}",
+                      "X-CSRFToken": getCookie("csrftoken"), // Ensure CSRF token is included
                     },
                     body: JSON.stringify({ status: "In transit" }),
                   })
@@ -1840,8 +1840,11 @@
                         alert("Order status updated to In Transit");
                         location.reload();
                       } else {
-                        alert("Failed to update order status");
+                        alert("Failed to update order status: " + data.error);
                       }
+                    })
+                    .catch((error) => {
+                      console.error("Error:", error);
                     });
                 };
 
