@@ -17,6 +17,7 @@ class User(AbstractUser):
     email_verification_token = models.CharField(max_length=32, blank=True, null=True)  # Add this line
     subscription_end_date = models.DateTimeField(null=True, blank=True)  # Add this line
     subscription_payment = models.ImageField(upload_to='subscription_payments/', blank=True, null=True)
+    last_notified = models.DateField(null=True, blank=True)  # Track the last notification date
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = []
     

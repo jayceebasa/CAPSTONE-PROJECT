@@ -62,7 +62,8 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.http import HttpResponseForbidden
 from celery import shared_task
 from django.utils.timezone import now
-
+from django.contrib.auth.signals import user_logged_in
+from django.dispatch import receiver
 logger = logging.getLogger(__name__)
 
 User = get_user_model()
@@ -233,6 +234,33 @@ def seller_profile(request):
 
     is_waiting_for_verification = bool(request.user.subscription_payment and hasattr(request.user.subscription_payment, 'url'))
 
+    # Calculate remaining subscription days
+    today = timezone.now().date()
+    subscription_end_date = request.user.subscription_end_date.date() if request.user.subscription_end_date else None
+    days_remaining = (subscription_end_date - today).days if subscription_end_date else None
+
+    # Show pop-up notification only if it hasn't been shown today
+    show_subscription_warning = (
+        days_remaining is not None and days_remaining <= 5 and
+        (not request.user.last_notified or request.user.last_notified < today)
+    )
+
+    if show_subscription_warning:
+        # Send email notification
+        formatted_end_date = request.user.subscription_end_date.strftime("%B %d, %Y")
+        send_mail(
+            subject="Subscription Expiry Reminder",
+            message=f"Dear {request.user.first_name},\n\nYour subscription will expire in {days_remaining} days on {formatted_end_date}. "
+                    f"Please renew your subscription to continue selling your products.\n\nThank you!",
+            from_email="noreply@astig.com",
+            recipient_list=[request.user.email],
+            fail_silently=False,
+        )
+
+        # Update the last notified date
+        request.user.last_notified = today
+        request.user.save()
+
     return render(request, 'core/prof_seller.html', {
         'form': form,
         'user': request.user,
@@ -242,7 +270,9 @@ def seller_profile(request):
         'is_subscribed': request.user.is_subscribed,
         'subscription_payment': request.user.subscription_payment,
         'is_waiting_for_verification': is_waiting_for_verification,
-        'subscription_end_date': request.user.subscription_end_date,  # Add this line
+        'subscription_end_date': request.user.subscription_end_date,
+        'show_subscription_warning': show_subscription_warning,  # Pass the flag to the template
+        'days_remaining': days_remaining,  # Pass remaining days to the template
     })
 
 @csrf_exempt
@@ -1329,6 +1359,29 @@ def toggle_user_status(request, user_id):
         user = User.objects.get(id=user_id)
         user.is_active = not user.is_active
         user.save()
+
+        # Send email notification
+        if not user.is_active:
+            # Email for account locked
+            send_mail(
+                subject="Account Locked by Admin",
+                message=f"Dear {user.first_name},\n\nYour account has been locked by the admin due to a violation of the website's rules. "
+                        f"If you believe this is a mistake, please contact support.\n\nThank you!",
+                from_email="noreply@astig.com",
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+        else:
+            # Email for account unlocked
+            send_mail(
+                subject="Account Unlocked",
+                message=f"Dear {user.first_name},\n\nYour account has been unlocked by the admin. You can now log in and continue using the platform. "
+                        f"If you have any questions, please contact support.\n\nThank you!",
+                from_email="noreply@astig.com",
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+
         return JsonResponse({"is_active": user.is_active})
     except User.DoesNotExist:
         return JsonResponse({"error": "User not found"}, status=404)
@@ -1446,6 +1499,17 @@ def update_subscription_status(request):
                 user.is_subscribed = False
                 user.subscription_end_date = None  # Clear the subscription end date
                 user.save()
+
+                # Send email notification
+                send_mail(
+                    subject="Account Locked Due to Subscription Non-Payment",
+                    message=f"Dear {user.first_name},\n\nYour account has been locked because your subscription has expired. "
+                            f"Please renew your subscription to regain access.\n\nThank you!",
+                    from_email="noreply@astig.com",
+                    recipient_list=[user.email],
+                    fail_silently=False,
+                )
+
                 return JsonResponse({"success": True, "message": "Subscription status updated."}, status=200)
             else:
                 return JsonResponse({"success": False, "message": "Subscription end date has not passed yet."}, status=400)
@@ -1599,25 +1663,33 @@ def extend_subscription_by_id(request, user_id):
             return JsonResponse({"success": False, "message": str(e)}, status=500)
     return JsonResponse({"success": False, "message": "Invalid request method"}, status=405)
   
-def notify_sellers_about_expiring_subscriptions():
-    """Notify sellers with 15 days left in their subscription."""
-    today = now().date()
-    fifteen_days_from_now = today + timedelta(days=15)
+def notify_on_login(user):
+    """Notify sellers about expiring subscriptions on login."""
+    print(f"Checking subscription for user: {user.username}")  # Debugging log
+    if user.role == 'Seller' and user.is_subscribed:
+        today = now().date()
+        if user.subscription_end_date:
+            subscription_end_date = user.subscription_end_date.date()  # Convert to date
+            days_remaining = (subscription_end_date - today).days
+            print(f"Subscription end date: {subscription_end_date}, Days remaining: {days_remaining}")  # Debugging log
 
-    # Get all sellers whose subscription ends in 15 days
-    sellers_to_notify = User.objects.filter(
-        role='Seller',
-        is_subscribed=True,
-        subscription_end_date=fifteen_days_from_now
-    )
-
-    for seller in sellers_to_notify:
-        # Send email notification
-        send_mail(
-            subject="Subscription Expiry Reminder",
-            message=f"Dear {seller.first_name},\n\nYour subscription will expire in 15 days on {seller.subscription_end_date}. "
-                    f"Please renew your subscription to continue selling your products.\n\nThank you!",
-            from_email="noreply@astig.com",
-            recipient_list=[seller.email],
-            fail_silently=False,
-        )
+            # Check if the notification was already sent today
+            if days_remaining <= 15 and (not user.last_notified or user.last_notified < today):
+                print(f"Sending email to: {user.email}")  # Debugging log
+                formatted_end_date = user.subscription_end_date.strftime("%B %d, %Y")
+                send_mail(
+                    subject="Subscription Expiry Reminder",
+                    message=f"Dear {user.first_name},\n\nYour subscription will expire in {days_remaining} days on {formatted_end_date}. "
+                            f"Please renew your subscription to continue selling your products.\n\nThank you!",
+                    from_email="noreply@astig.com",
+                    recipient_list=[user.email],
+                    fail_silently=False,
+                )
+                # Update the last notified date
+                user.last_notified = today
+                user.save()
+            
+@receiver(user_logged_in)
+def send_subscription_reminder(sender, request, user, **kwargs):
+    print(f"User logged in: {user.username}")  # Debugging log
+    notify_on_login(user)
