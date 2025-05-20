@@ -203,7 +203,7 @@
         <div class="single-product-item">
           <div class="product-image" style="height: 250px; margin-bottom: 50px">
             <a href="{% url 'core:single_product' product.id %}">
-              <img src="{{ product.image.url }}" alt="{{ product.name }}" />
+              <img src="{{ product.image.url }}" alt="{{ product.name }}" style="max-height: 210px !important; max-width: 210px !important" />
             </a>
           </div>
           <h3>{{ product.name }}</h3>

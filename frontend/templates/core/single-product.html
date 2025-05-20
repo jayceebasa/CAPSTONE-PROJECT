@@ -34,6 +34,8 @@
             <br />
             <a href="#" class="cart-btn add-to-cart" data-product-id="{{ product.id }}"><i class="fas fa-shopping-cart"></i> Add to Cart</a>
             <p><strong>Categories: </strong>{{ product.category }}</p>
+            <p><strong>Seller: </strong>{{ product.seller.first_name }} {{product.seller.last_name}}</p>
+            <p><strong>Email: </strong>{{ product.seller.email }}</p>
           </div>
         </div>
       </div>
